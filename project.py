@@ -123,12 +123,13 @@ def top_hat(image, N):
 
     return final
 
+#get properties of each cell and store are respective index, remove cells below size threshold
 def count_cells(image):
-    cells = 0
+    cells = []
     return cells
 
 
-image_path = "Images/PhC-C2DL-PSC/Sequence 1/t000.tif"
+image_path = "COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/t000.tif"
 
 segmented = process_image(image_path)
 
