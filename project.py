@@ -149,5 +149,5 @@ segmented = process_image(image_path)
 
 cells = count_cells(segmented)
 
-for cell in cells:
-    print (cell)
+#for cell in cells:
+#    print (cell)
