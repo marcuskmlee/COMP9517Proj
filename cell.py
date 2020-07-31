@@ -10,6 +10,19 @@ class Cell(object):
         self.x_velocity = 0
         self.y_velocity = 0
     
+    def __str__(self):
+        return "Cell id: " + str(self.id) + " x range: " + str(self.x_min) + "-" + str(self.x_max) + " y range: " + str(self.y_min) + "-" + str(self.y_max)
+
+    def update_bound(self, x, y):
+        if (x < self.x_min):
+            self.x_min = x
+        if (x > self.x_max):
+            self.x_max = x
+        if (y < self.y_min):
+            self.y_min = y
+        if (y > self.y_max):
+            self.y_max = y
+
     def get_id(self):
         return self.id
 
