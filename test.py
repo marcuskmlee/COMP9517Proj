@@ -101,15 +101,21 @@ def _watershed(img_mat):
 
 # print(f"Reading {filename}")
 
-img = cv.imread(filename)
+img = Image.open(filename)
+img.thumbnail(size)
 
-fig = plt.figure()
-fig.add_subplot(1, 3, 1)
-plt.imshow(img)
+img = np.array(img)[:, :, :3]
+img = stretch(img)
+
+plt.imshow(~img)
 plt.axis('off')
 plt.title("Initial")
 plt.show()
 
+ws_labels = _watershed(~img)
+
+plot_two("Watershed", img, "OG", ws_labels, "Watershed")
+exit(1)
 
 img_mat = img[:, :, :3] #Copy the pixels (no need for :3 since no colour channels??)
 
@@ -153,7 +159,7 @@ plot_three_images("Meanshift vs Watershed", img_mat, "Original",
 qs_labels = quickshift(img_mat, kernel_size=3, max_dist=5, ratio=0.5)
 qs_g = graph.rag_mean_color(img_mat, qs_labels)
 
-qs_labels2 = graph.merge_hierarchical(qs_labels, qs_g, thresh=20, rag_copy=False,
+qs_labels2 = graph.merge_hierarchical(qs_labels, qs_g, thresh=35, rag_copy=False,
                                    in_place_merge=True,
                                    merge_func=merge_mean_color,
                                    weight_func=weight_mean_color)

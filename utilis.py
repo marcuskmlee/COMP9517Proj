@@ -2,6 +2,9 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.future import graph
+from sklearn.cluster import MeanShift, estimate_bandwidth
+from skimage import color
+import os 
 
 def crop(img_mat, black_bg=False):
     img = cv.cvtColor(img_mat, cv.COLOR_BGR2GRAY)
@@ -183,3 +186,90 @@ def merge_mean_color(graph, src, dst):
     graph.nodes[dst]['pixel count'] += graph.nodes[src]['pixel count']
     graph.nodes[dst]['mean color'] = (graph.nodes[dst]['total color'] /
                                       graph.nodes[dst]['pixel count'])
+
+def pathname(path):
+    filename = os.path.basename(path)
+
+    length = len(filename)
+
+    path = path[:-length]
+
+    return path, filename
+
+def sharpen(img):
+    _a = 1.25
+    _sigma = 1
+
+    I = img
+
+    L = cv.GaussianBlur(I, (5,5), 0)
+
+    H = cv.subtract(I, L) * _a
+
+    O = cv.add(I, H, dtype=8)
+
+    return O
+
+def stretch(image):
+    minVal = np.amin(image)
+    maxVal = np.amax(image)
+
+    mod = 255.0/(maxVal-minVal)
+
+    table = np.array( [(x-minVal)*mod for x in range(256)] )
+
+    draw = cv.LUT(image, table)
+
+    draw = np.uint8(draw)
+
+    return draw
+
+def show_image(image, title):
+    plt.imshow(image)
+    plt.axis('off')
+    plt.title(title)
+    plt.show()
+
+def _meanshift(img_mat):
+    colour_samples = np.reshape(img_mat, [-1,3])
+
+    bandwidth = estimate_bandwidth(colour_samples, quantile=0.2, n_samples=500)
+
+    ms_clf = MeanShift(bandwidth=bandwidth, bin_seeding=True)
+    ms_clf.fit(colour_samples)
+
+    ms_labels = ms_clf.labels_
+
+    # Step 4 - reshape ms_labels back to the original image shape 
+    # for displaying the segmentation output 
+    ms_labels = np.reshape(ms_labels, img_mat.shape[:2])
+
+    # print(np.unique(ms_labels))
+
+    # print(mappings)
+
+    # segmentedImg = cluster_centers[ms_labels]
+    
+    ms_g = graph.rag_mean_color(img_mat, ms_labels)
+
+    ms_labels2 = graph.merge_hierarchical(ms_labels, ms_g, thresh=35, rag_copy=False,
+                                   in_place_merge=True,
+                                   merge_func=merge_mean_color,
+                                   weight_func=weight_mean_color)
+                                   
+    ms_out = color.label2rgb(ms_labels, img_mat, kind='avg', bg_label=0)
+
+    return ms_labels, ms_out
+
+def aggregate(labels):
+    mappings = dict.fromkeys(np.unique(labels), 0)
+
+    rows, cols = labels.shape
+
+    for x in range(rows):
+        for y in range(cols):
+            mappings[labels[x, y]] += 1
+
+    # mappings = {k: v for k, v in sorted(mappings.items(), key=lambda item: item[1])}
+
+    return mappings
