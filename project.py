@@ -126,6 +126,20 @@ def top_hat(image, N):
 #get properties of each cell and store are respective index, remove cells below size threshold
 def count_cells(image):
     cells = []
+    (h, w, d) = image.shape
+    for x in range(w):
+        for y in range(h):
+            pixelval, q, p = image[y, x]
+            if (pixelval != 0):
+                existing = False
+                for cell in cells:
+                    if (cell.get_id() == pixelval):
+                        existing = True
+                        cell.update_bound(x,y)
+                if (existing == False):
+                    new_cell = Cell(pixelval, x, y)
+                    cells.append(new_cell)
+
     return cells
 
 
@@ -134,3 +148,6 @@ image_path = "COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 
 segmented = process_image(image_path)
 
 cells = count_cells(segmented)
+
+for cell in cells:
+    print (cell)
