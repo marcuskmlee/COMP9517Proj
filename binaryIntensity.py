@@ -28,7 +28,8 @@ img = cv.imread(filename, 0)
 
 # show_image(img, "Original")
 
-_, mask = cv.threshold(img, 20, 50, cv.THRESH_BINARY)
+blur = cv.GaussianBlur(img,(5,5),0)
+_, mask = cv.threshold(blur, 20, 255, cv.THRESH_BINARY)
 
 # mask = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C,\
 #             cv.THRESH_BINARY, 11, 2)
@@ -61,7 +62,7 @@ _, mask = cv.threshold(img, 20, 50, cv.THRESH_BINARY)
 
 # plot_two("meanshift", img, "OG", ms_out, "ms")
 
-mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
+# mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
 
 _, contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
 
@@ -73,3 +74,6 @@ for i in range(len(contours)):
     cv.drawContours(img, contours, i, colour, 2)
 
 show_image(img, "Contours")
+
+path, name = pathname(filename)
+cv.imwrite(path + "mask-" + name, mask)

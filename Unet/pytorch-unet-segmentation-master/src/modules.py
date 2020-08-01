@@ -139,7 +139,7 @@ def test_SEM(model, data_test,  folder_to_save):
         data_test (DataLoader): test dataset
         folder_to_save (str): path that the predictions would be saved
     '''
-    for i, (images) in enumerate(data_test):
+    for i, (images, img_name) in enumerate(data_test):
 
         print(images)
         stacked_img = torch.Tensor([])
@@ -158,7 +158,7 @@ def test_SEM(model, data_test,  folder_to_save):
         print(final_img)
         final_img = final_img.astype("uint8")
         break
-    return final_img
+    return final_img, img_name
 
 
 if __name__ == '__main__':

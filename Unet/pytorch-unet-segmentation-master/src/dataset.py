@@ -233,7 +233,7 @@ class SEMDataTest(Dataset):
         # Convert the image into numpy array
         img_as_np = np.asarray(img_as_img)
 
-        img_as_np = stretch(img_as_np)
+        img_as_np = stretch(sharpen(img_as_np))
 
         pad_size = int((self.in_size - self.out_size)/2)
         img_as_np = np.pad(img_as_np, pad_size, mode="symmetric")

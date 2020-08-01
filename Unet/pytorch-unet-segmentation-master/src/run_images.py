@@ -28,7 +28,10 @@ net.eval().to("cpu")
 test_model(net,
            SEM_test_load, 2290, f"../../../Data/{dataset[0]}/Sequence_1_Preds/")
 
-# plt.imshow(image)
+# img, name = test_SEM(net, 
+#     SEM_test_load, f"../../../Data/{dataset[0]}/Sequence_1_Preds/")
+
+# plt.imshow(img)
 # plt.axis('off')
-# plt.title("Final")
+# plt.title(name)
 # plt.show()
