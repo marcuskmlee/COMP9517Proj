@@ -24,12 +24,15 @@ parser.add_argument('file', type=str, nargs=1,
 args = parser.parse_args()
 filename = args.file[0]
 
-img = cv.imread(filename, 0)
+img = cv.imread(filename, cv.IMREAD_ANYDEPTH)
 
 # show_image(img, "Original")
 
-blur = cv.GaussianBlur(img,(5,5),0)
-_, mask = cv.threshold(blur, 20, 255, cv.THRESH_BINARY)
+def otsuThreshold(img):
+    blur = cv.GaussianBlur(img,(5,5),0)
+    _, mask = cv.threshold(blur, 20, 255, cv.THRESH_BINARY)
+
+    return mask
 
 # mask = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C,\
 #             cv.THRESH_BINARY, 11, 2)
