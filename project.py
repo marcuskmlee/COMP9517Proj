@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 from scipy import ndimage as ndi
+from scipy.spatial import distance
 from skimage.morphology import watershed
 from skimage.feature import peak_local_max
 from sklearn.cluster import MeanShift
@@ -17,6 +18,7 @@ import math
 
 from cell import Cell
 
+#not currently used, only for testing
 def plot_two_images(figure_title, image1, label1, image2, label2):
     fig = plt.figure()
     fig.suptitle(figure_title)
@@ -141,19 +143,72 @@ def count_cells(image):
 def draw_bounding_box(image, cells):
     drawn = image.copy()
     for cell in cells:
-
-        colour = (255, 0, 0)
+        #red bounding box for cells
+        colour = (0, 0, 255)
         if (cell.dividing):
-            colour = (0, 0, 255)
+            #blue bounding box when cell division
+            colour = (255, 0, 0)
 
         drawn = cv2.rectangle(drawn, (cell.get_x_min(), cell.get_y_min()), (cell.get_x_max(), cell.get_y_max()), colour, 1)
     
     return drawn
 
+def in_image(image_no, cell_id):
+    if (image_no < 0 or image_no >= len(sequence)):
+        return False
+    for cell in sequence[image_no]:
+        if (cell.get_id() == cell_id):
+            return True
+    return False
+
+def get_cell(image_no, cell_id):
+    for cell in sequence[image_no]:
+        if (cell.get_id() == cell_id):
+            return cell
+    return None
+
+def calculate_speed(cell_id):
+    if (in_image(cur_image - 1, cell_id)):
+        return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+    return 0
+
+def calculate_total_distance(cell_id):
+    total = 0
+    for i in range(cur_image - 1):
+        if (in_image(i, cell_id)):
+            total = total + distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(i + 1, cell_id).get_centre())
+    return total
+
+def calculate_net_distance(cell_id):
+    for i in range(cur_image):
+        if (in_image(i, cell_id)):
+            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+    return 0
+
+def show_cell_details(x, y):
+    for cell in sequence[cur_image]:
+        cell_id = cell.get_id()
+        if (cell.contains(x, y) and in_image(cur_image, cell_id)):
+            print("Speed: " + str(calculate_speed(cell_id)))
+            total_distance = calculate_total_distance(cell_id)
+            print("Total Distance: " + str(total_distance))
+            net_distance = calculate_net_distance(cell_id)
+            print("Net Distance: " + str(net_distance))
+            confinement = 0
+            if (net_distance != 0):
+                confinement = (total_distance / net_distance)
+            print("Confinement Ratio: " + str(confinement))
+
+def on_click(event, x, y, p1, p2):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        show_cell_details(x, y)
+
+
 images = [f for f in glob.glob("COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/*")]
 images.sort()
 
 sequence = np.empty(len(images), dtype=list)
+cur_image = 0
 i = 0
 
 for image_path in images:
@@ -172,11 +227,19 @@ for image_path in images:
     cells = count_cells(flooded)
     sequence[i] = cells
 
+    #cell matching goes here
+
     i = i + 1
     
+cv2.namedWindow('image')
+cv2.setMouseCallback('image', on_click)
+
 for i in range(len(images)):
+    cur_image = i
     image = cv2.imread(images[i])
 
     drawn = draw_bounding_box(image, sequence[i])
 
-    plot_two_images(image_path, image, "Original Image", drawn, "Bounding Boxes")
+    #plot_two_images(image_path, image, "Original Image", drawn, "Bounding Boxes")
+    cv2.imshow('image',drawn)
+    cv2.waitKey(0)
