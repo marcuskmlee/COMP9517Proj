@@ -34,8 +34,8 @@ mask = otsuThreshold(img)
 # contours = cv.findContours(mask,cv.RETR_LIST,cv.CHAIN_APPROX_NONE)
 # cv.drawContours(mask,contours,-1,(0,255,0),3)
 
-    src = backgroundSubtraction(image)
-    mask = otsuThreshold(src)
+src = backgroundSubtraction(image)
+mask = otsuThreshold(src)
 
 cv.imwrite(path+"mask-"+name, mask)
 

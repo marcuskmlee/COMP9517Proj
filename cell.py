@@ -17,6 +17,8 @@ class Cell(object):
         self.matched = False
         self.inFrame = True
 
+        self.area = cv.contourArea(self.cnt)
+
     def __str__(self):
         return "Cell id: " + str(self.id) + " x range: " + str(self.x_min) + "-" + str(self.x_max) + " y range: " + str(self.y_min) + "-" + str(self.y_max)
 
@@ -160,6 +162,8 @@ class CellManager(object):
     def add_cell(self, _id, x, y, cnt):
         # TODO: Match cells by characteristic, Don't add a cell we already have
         self.cells.append(Cell(_id, x, y, cnt))
+        
+                
 
     def count_cells(self, mask):
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
