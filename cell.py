@@ -198,8 +198,8 @@ class CellManager(object):
         minMatch = np.full((numCurr,2),100)
         for i in range(numCurr):
             for j in range(numPrev):
-                displacement = displacement(h,w,currCell.center, prevCell.center)
-                diffArea = currCell.area - prevCell.area
+                displacement = displacement(h,w,currCells[i].center, prevCells[j].center)
+                diffArea = currCells[i].area - prevCells[j].area
                 matchingMatrix[i][j] = displacement+diffArea
                 if (displacement+diffArea < minMatch[i][0]):
                     minMatch[i][0] = displacement+diffArea
