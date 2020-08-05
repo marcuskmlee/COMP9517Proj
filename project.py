@@ -1,168 +1,244 @@
-#Group A COMP9517 Project
-
-import imutils
+# import the necessary packages
 import cv2
 import numpy as np
+import math 
+import glob 
 
-#QUESTION 1
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
-#Step 1:
-#Read images from a given folder
+from scipy import ndimage as ndi
+from scipy.spatial import distance
+from skimage.morphology import watershed
+from skimage.feature import peak_local_max
+from sklearn.cluster import MeanShift
 
-#Step 2:
-#Read first image from a given folder
+from PIL import Image
+import math
 
-#Step 3:
-#Initialise some form of tracking classifier
+from cell import Cell
 
-#Step 4:
-#Apply the Kalman filter to the loaded image
+#not currently used, only for testing
+def plot_two_images(figure_title, image1, label1, image2, label2):
+    fig = plt.figure()
+    fig.suptitle(figure_title)
 
-#Step 5:
-#Apply/draw the boundary boxes
+    # Display the first image
+    fig.add_subplot(1, 2, 1)
+    plt.imshow(image1)
+    plt.axis('off')
+    plt.title(label1)
+    
+    # Display the second image
+    fig.add_subplot(1, 2, 2)
+    plt.imshow(image2)
+    plt.axis('off')
+    plt.title(label2)
+    
 
+    plt.show()
 
-#Step 6:
-#Track the motion of the particles
+def contrast_smoothing(image):
+    max = 0
+    min = 255
+    smooth = image.copy()
+    (h, w, d) = smooth.shape
+    pixels = [[0 for x in range(w)] for y in range(h)]
 
-#Step 7:
-#Draw the trajectory from the tracked motion
-
-#Step 8:
-#Count the number of cells (number of boundary boxes)
-
-#Step 9:
-#Output this number
-
-#Step 10:
-#DONE
-
-#QUESTION 2
-def maxNeighbourhood(N,image,x,y):
-	# A function that creates a neighbourhood/box of size NxN and returns the maximum pixel value in that neighbourhood
-	(h,w) = image.shape
-	top = x-N/2
-	if top < 0:
-		top = 0
-	bottom = x+N/2
-	if bottom > h:
-		bottom = h
-	left = y-N/2
-	if left < 0:
-		left = 0
-	right = y+N/2
-	if right > w:
-		right = w
-	neighbourhood = image[int(top):int(bottom), int(left):int(right)]
-	# cv2.imshow("neigh", neighbourhood)
-	# cv2.waitKey(0)
-	return neighbourhood.max()
-
-def minNeighbourhood(N,image,x,y):
-	#A function that creates a neighbourhood/box of size NxN and returns the min pixel value
-	(h,w) = image.shape
-	top = x-N/2
-	if top < 0:
-		top = 0
-	bottom = x+N/2
-	if bottom > h:
-		bottom = h
-	left = y-N/2
-	if left < 0:
-		left = 0
-	right = y+N/2
-	if right > w:
-		right = w
-	neighbourhood = image[int(top):int(bottom), int(left):int(right)]
-	# cv2.imshow("neigh", neighbourhood)
-	# cv2.waitKey(0)
-	return neighbourhood.min()
-
-def ContrastStretch(image, N, M):
-	(h, w) = image.shape
-	A = image.copy()
-	B = image.copy()
-	# for x in range(0,h):
-	# 	for y in range(0,w):
-	# 		A[x][y] = maxNeighbourhood(N,I,x,y)
-
-	# for x in range(0,h):
-	# 	for y in range(0,w):
-	# 		B[x][y] = minNeighbourhood(N,A,x,y)
-
-	# #Invert the colours so that the image comes out with a white background similar to the original
-	# O = ~(cv2.subtract(B,I))
-	# return O
-	if M == 0:
-	#If M == 0 then we perform max-filtering, then min-filtering
-		for x in range(0,h):
-			for y in range(0,w):
-				A[x][y] = maxNeighbourhood(N,I,x,y)
-
-		for x in range(0,h):
-			for y in range(0,w):
-				B[x][y] = minNeighbourhood(N,A,x,y)
-		cv2.imshow("A",A)
-		cv2.imshow("B",B)
-		cv2.waitKey()
-
-	#Invert the colours so that the image comes out with a white background similar to the original
-		O = (cv2.subtract(B,I))
-
-	elif M == 1:
-	#If m == 1 then we perform min-filtering, then max-filtering
-		for x in range(0,h):
-			for y in range(0,w):
-				A[x][y] = minNeighbourhood(N,I,x,y)
-
-		for x in range(0,h):
-			for y in range(0,w):
-				B[x][y] = maxNeighbourhood(N,A,x,y)
-
-		cv2.imshow("A",A)
-		cv2.imshow("B",B)
-		cv2.waitKey()
-		O = ~(cv2.subtract(I,B))
-
-	return O
-def ColourCells(image):
-	(h,w,d) = image.shape
-	# kernel = np.ones((5,5),np.float32)/25
-	# dst = cv2.bilateralFilter(image,-1,15,10)
-	# blur = cv2.GaussianBlur(image,(2,2),0)
-	# return blur
-	cellCount = 0
-	for y in range(0,h):
-		for x in range(0,w):
-			if(image[y][x][0] > 10):
-				image[y][x][2] = 255-cellCount
-				cellCount += 1
-
-# def findTop(image, y, x):
-
-
-				
-
-	
-
-I = cv2.imread("Data/FLUO-N2DL-HeLa/Sequence 1/t000.tif", cv2.IMREAD_GRAYSCALE)	
-# CS = ContrastStretch(I,30,0)
-_ ,Blackbg = cv2.threshold(I,129,255,cv2.THRESH_TOZERO)
-# BlackGauss = cv2.GaussianBlur(Blackbg,(9,9),0)
-BlackOpen = cv2.morphologyEx(Blackbg, cv2.MORPH_OPEN, (3,3))
-toCells = cv2.cvtColor(BlackOpen, cv2.COLOR_GRAY2BGR)
-ColourCells(toCells)
-cv2.imshow("I",I)
-# cv2.imshow("CS", CS)
-cv2.imshow("black", BlackOpen)
-cv2.imshow("Cells", toCells)
-# cv2.imshow("colorCS", cv2.cvtColor(CS, cv2.COLOR_GRAY2BGR))
-# cv2.waitKey()
-# Cells = DetectCells(cv2.cvtColor(CS, cv2.COLOR_GRAY2BGR))
-# cv2.imshow("Cells", CS)
-cv2.waitKey()
+    for x in range(w):
+        for y in range(h):
+            pixelval, q, p = image[y, x]
+            intval = pixelval.astype(np.int32)
+            pixels[y][x] = intval
+            if intval < min:
+                min = intval
+            if intval > max:
+                max = intval
+    for x in range(w):
+        for y in range(h):
+            intval = pixels[y][x]
+            newval = (intval-min) * ((255)/(max - min))
+            smooth[y, x] = (newval, newval, newval)
+    return smooth.astype(np.uint8)
 
 
 
+def process_image(image):
+
+    result = top_hat(image, 21)
+
+    thresh = cv2.threshold(result,100,255,cv2.THRESH_BINARY)[1]
+
+    #erode single pixel around each cell to remove small artifacts and separate lightly touching cells
+    #use for PhC image set but not for others
+    #eroded = cv2.erode(thresh, None, iterations=1)
+
+    return thresh
+
+def top_hat(image, N):
+
+    max_filtered = image.copy()
+    max_filtered = cv2.erode(max_filtered, None, iterations=15)
+
+    min_filtered = cv2.dilate(max_filtered, None, iterations=15)
+
+    result = image.astype(np.int32) - min_filtered.astype(np.int32)
+
+    final = contrast_smoothing(result)
+    
+
+    return final
+
+#recursive flooding of cell
+def flood_adjacent(image, y, x, i):
+    (h, w, d) = image.shape
+    pixelval, q, p = image[y, x]
+    if (pixelval == 255):
+        image[y, x] = (i, i, i)
+        if (y+1 < h):
+            flood_adjacent(image, y+1, x, i)
+        if (y-1 >= 0):
+            flood_adjacent(image, y-1, x, i)
+        if (x+1 < w):
+            flood_adjacent(image, y, x+1, i)
+        if (x-1 >= 0):
+            flood_adjacent(image, y, x-1, i)
+
+#labels each cell with different value
+def flood(image):
+    flooded = image.copy()
+    flooded = flooded.astype(np.int32)
+    (h, w, d) = flooded.shape
+    i = 1
+    for x in range(w):
+        for y in range(h):
+            pixelval, q, p = flooded[y, x]
+            if (pixelval == 255):
+                flood_adjacent(flooded, y, x, i)
+                i = i + 1
+                #skips i = 255 to avoid infinite recursion
+                if (i == 255):
+                    i = i + 1
+    return flooded
+
+#get properties of each cell and store are respective index, remove cells below size threshold
+def count_cells(image):
+    cells = []
+    (h, w, d) = image.shape
+    for x in range(w):
+        for y in range(h):
+            pixelval, q, p = image[y, x]
+            if (pixelval != 0):
+                existing = False
+                for cell in cells:
+                    if (cell.get_id() == pixelval):
+                        existing = True
+                        cell.update_bound(x,y)
+                if (existing == False):
+                    new_cell = Cell(pixelval, x, y)
+                    cells.append(new_cell)
+
+    return cells
+
+def draw_bounding_box(image, cells):
+    drawn = image.copy()
+    for cell in cells:
+        #red bounding box for cells
+        colour = (0, 0, 255)
+        if (cell.dividing):
+            #blue bounding box when cell division
+            colour = (255, 0, 0)
+
+        drawn = cv2.rectangle(drawn, (cell.get_x_min(), cell.get_y_min()), (cell.get_x_max(), cell.get_y_max()), colour, 1)
+    
+    return drawn
+
+def in_image(image_no, cell_id):
+    if (image_no < 0 or image_no >= len(sequence)):
+        return False
+    for cell in sequence[image_no]:
+        if (cell.get_id() == cell_id):
+            return True
+    return False
+
+def get_cell(image_no, cell_id):
+    for cell in sequence[image_no]:
+        if (cell.get_id() == cell_id):
+            return cell
+    return None
+
+def calculate_speed(cell_id):
+    if (in_image(cur_image - 1, cell_id)):
+        return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+    return 0
+
+def calculate_total_distance(cell_id):
+    total = 0
+    for i in range(cur_image - 1):
+        if (in_image(i, cell_id)):
+            total = total + distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(i + 1, cell_id).get_centre())
+    return total
+
+def calculate_net_distance(cell_id):
+    for i in range(cur_image):
+        if (in_image(i, cell_id)):
+            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+    return 0
+
+def show_cell_details(x, y):
+    for cell in sequence[cur_image]:
+        cell_id = cell.get_id()
+        if (cell.contains(x, y) and in_image(cur_image, cell_id)):
+            print("Speed: " + str(calculate_speed(cell_id)))
+            total_distance = calculate_total_distance(cell_id)
+            print("Total Distance: " + str(total_distance))
+            net_distance = calculate_net_distance(cell_id)
+            print("Net Distance: " + str(net_distance))
+            confinement = 0
+            if (net_distance != 0):
+                confinement = (total_distance / net_distance)
+            print("Confinement Ratio: " + str(confinement))
+
+def on_click(event, x, y, p1, p2):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        show_cell_details(x, y)
 
 
+images = [f for f in glob.glob("COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/*")]
+images.sort()
+
+sequence = np.empty(len(images), dtype=list)
+cur_image = 0
+i = 0
+
+for image_path in images:
+    #image_path = "COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/t000.tif"
+
+    image = cv2.imread(image_path)
+
+    #processes images to segmented and thresholded cells
+    #replace with better segmentation algorithm
+    segmented = process_image(image)
+
+    #labels each cell with different values for counting
+    flooded = flood(segmented)
+
+    #counts labelled cells, measures bounding boxes and stores in list
+    cells = count_cells(flooded)
+    sequence[i] = cells
+
+    #cell matching goes here
+
+    i = i + 1
+    
+cv2.namedWindow('image')
+cv2.setMouseCallback('image', on_click)
+
+for i in range(len(images)):
+    cur_image = i
+    image = cv2.imread(images[i])
+    drawn = draw_bounding_box(image, sequence[i])
+
+    #plot_two_images(image_path, image, "Original Image", drawn, "Bounding Boxes")
+    cv2.imshow('image',drawn)
+    cv2.waitKey(0)
