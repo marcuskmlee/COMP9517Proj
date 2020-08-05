@@ -10,14 +10,9 @@ import Flou
 class Cell(object):
     def __init__(self, i, cnt):
         self.id = i
-        self.cnt = cnt
-        rect = cv.boundingRect(cnt)
+        self.contours = cnt
+        self.rect = cv.boundingRect(cnt)
         self.center, _ = cv.minEnclosingCircle(cnt)
-
-        self.x = int(rect[0])
-        self.y = int(rect[1])
-        self.w = int(x + rect[2])
-        self.h = int(h + rect[3])
 
         self.x_velocity = 0
         self.y_velocity = 0
@@ -27,17 +22,7 @@ class Cell(object):
         self.inFrame = True
 
     def __str__(self):
-        return "Cell id: " + str(self.id) + " x range: " + str(self.x) + "-" + str(self.y) + " y range: " + str(self.w) + "-" + str(self.h)
-
-    def update_bound(self, x, y):
-        if (x < self.x):
-            self.x = x
-        if (x > self.y):
-            self.y = x
-        if (y < self.w):
-            self.w = y
-        if (y > self.h):
-            self.h = y
+        return "Cell id: " + str(self.id) + " x range: " + str(self.x) + "-" + str(self.w) + " y range: " + str(self.y) + "-" + str(self.h)
 
     def contains(self, x, y):
         if (x < self.y and x > self.x):
@@ -45,29 +30,20 @@ class Cell(object):
                 return True
         return False
 
-    def get_dividing(self):
+    def is_dividing(self):
         return self.dividing
 
     def get_matched(self):
         return self.matched
     
     def get_centre(self):
-        return (int((self.x + self.y)/2),int((self.w + self.h)/2)) 
+        return int(self.center)
 
     def get_id(self):
         return self.id
 
-    def get_x(self):
-        return self.x
-
-    def get_y(self):
-        return self.y
-
-    def get_w(self):
-        return self.w
-
-    def get_h(self):
-        return self.h
+    def get_rect(self):
+        return self.rect
 
     def get_x_velocity(self):
         return self.x_velocity
@@ -77,18 +53,6 @@ class Cell(object):
     
     def set_id(self, new_id):
         self.id = new_id
-
-    def set_x(self, new_x):
-        self.x = new_x
-
-    def set_y(self, new_x):
-        self.y = new_x
-
-    def set_w(self, new_y):
-        self.w = new_y
-
-    def set_h(self, new_y):
-        self.h = new_y
 
     def set_x_velocity(self, new_x_velocity):
         self.x_velocity = new_x_velocity
@@ -112,7 +76,7 @@ class CellManager(object):
     def count_cell_divisions(self, cells):
         count = 0
         for cell in cells:
-            if (cell.get_dividing()):
+            if (cell.is_dividing()):
                 count = count + 1
         return count
 
@@ -126,13 +90,13 @@ class CellManager(object):
         h = hMaxima(img)
         hmax = nFoldDilation(img, h)
 
-        show_image(hmax, "Dilated")
-        return
-
         #counts labelled cells, measures bounding boxes and stores in list
-        pred_count, sequence = manager.count_cells(mask)
+        pred_count, sequence = self.count_cells(mask)
 
         self.sequence.append(sequence)
+        drawn = self.draw_bounding_box(img)
+        show_image(drawn, "bounding box")
+
         self.currImage = self.currImage + 1
 
 
@@ -151,27 +115,29 @@ class CellManager(object):
         return None
 
     def calculate_speed(self, cell_id):
-        if (in_image(cur_image - 1, cell_id)):
-            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+        if self.in_image(self.currImage - 1, cell_id):
+            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(self.currImage, cell_id).get_centre())
         return 0
 
     def calculate_total_distance(self, cell_id):
         total = 0
-        for i in range(cur_image - 1):
+        for i in range(self.currImage - 1):
             if (in_image(i, cell_id)):
                 total = total + distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(i + 1, cell_id).get_centre())
         return total
 
     def calculate_net_distance(self, cell_id):
-        for i in range(cur_image):
-            if (in_image(i, cell_id)):
-                return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+        for i in range(self.curImage):
+            if self.in_image(i, cell_id):
+                cell1 = get_cell(i, cell_id)
+                cell2 = get_cell(self.currImage, cell_id)
+                return distance.euclidean(cell1.get_centre(), cell2.get_centre())
         return 0
 
     def show_cell_details(self, x, y):
-        for cell in self.sequence[cur_image]:
+        for cell in self.sequence[self.currImage]:
             cell_id = cell.get_id()
-            if (cell.contains(x, y) and in_image(cur_image, cell_id)):
+            if (cell.contains(x, y) and self.in_image(self.currImage, cell_id)):
                 print("Speed: " + str(calculate_speed(cell_id)))
                 total_distance = calculate_total_distance(cell_id)
                 print("Total Distance: " + str(total_distance))
@@ -184,8 +150,7 @@ class CellManager(object):
 
     def add_cell(self, _id, cnt):
         # TODO: Match cells by characteristic, Don't add a cell we already have
-        self.cells.append(Cell(_id, cnt))
-        return True
+        return Cell(_id, cnt)
 
     def count_cells(self, mask):
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
@@ -199,15 +164,16 @@ class CellManager(object):
         
         return len(contours), sequence
 
-    def draw_bounding_box(self,image, cells):
+    def draw_bounding_box(self,image):
         drawn = image.copy()
 
-        for cell in self.cells:
+        for cell in self.sequence[self.currImage]:
             colour = (0, 255, 0)
-            if cell.dividing:
+            if cell.is_dividing():
                 colour = (0, 0, 255)
-
-            cv.rectangle(drawn, (cell.get_x(), cell.get_w()), (cell.get_y(), cell.get_h()), colour, 1)
-            cv.circle(drawing, center, 1, color, 2)
+            
+            x, y, w, h = cell.get_rect()
+            cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
+            cv.circle(drawn, center, -1, color, 2)
         
         return drawn
