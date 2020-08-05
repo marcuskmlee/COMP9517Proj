@@ -122,23 +122,26 @@ def flood(image):
     return flooded
 
 #get properties of each cell and store are respective index, remove cells below size threshold
-def count_cells(image):
-    cells = []
-    (h, w, d) = image.shape
-    for x in range(w):
-        for y in range(h):
-            pixelval, q, p = image[y, x]
-            if (pixelval != 0):
-                existing = False
-                for cell in cells:
-                    if (cell.get_id() == pixelval):
-                        existing = True
-                        cell.update_bound(x,y)
-                if (existing == False):
-                    new_cell = Cell(pixelval, x , y)
-                    cells.append(new_cell)
+# def count_cells(image):
+#     cells = []
+#     (h, w, d) = image.shape
+#     for x in range(w):
+#         for y in range(h):
+#             pixelval, q, p = image[y, x]
+#             if (pixelval != 0):
+#                 existing = False
+#                 for cell in cells:
+#                     if (cell.get_id() == pixelval):
+#                         existing = True
+#                         cell.update_bound(x,y)
+#                 if (existing == False):
+#                     print(pixelval)
+#                     print(x)
+#                     print(y)
+#                     new_cell = Cell(pixelval, x , y)
+#                     cells.append(new_cell)
 
-    return cells
+#     return cells
 
 def draw_bounding_box(image, cells):
     drawn = image.copy()
@@ -213,6 +216,7 @@ def on_click(event, x, y, p1, p2):
 
 
 images = [f for f in glob.glob("Data/PhC-C2DL-PSC/Sequence_m/*")]
+
 images.sort()
 
 sequence = np.empty(len(images), dtype=list)
@@ -245,11 +249,10 @@ cv2.setMouseCallback('image', on_click)
 for i in range(len(images)):
     cur_image = i
     image = cv2.imread(images[i])
-
     drawn = draw_bounding_box(image, sequence[i])
     print("Number of cells: " + str(len(sequence[i])))
     print("Number of cell divisions: " + str(count_cell_divisions(sequence[i])))
 
-    #plot_two_images(image_path, image, "Original Image", drawn, "Bounding Boxes")
-    cv2.imshow('image',drawn)
-    cv2.waitKey(0)
+    # plot_two_images(image_path, image, "Original Image", drawn, "Bounding Boxes")
+    cv2.imshow("image",drawn)
+    cv2.waitKey()

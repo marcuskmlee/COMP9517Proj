@@ -214,6 +214,9 @@ def stretch(image):
     minVal = np.amin(image)
     maxVal = np.amax(image)
 
+    # print("min:"+str(minVal))
+    # print("max:"+str(maxVal))
+
     mod = 255.0/(maxVal-minVal)
 
     table = np.array( [(x-minVal)*mod for x in range(256)] )

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from skimage.future import graph
 from sklearn.cluster import MeanShift, estimate_bandwidth
 from skimage import color
-import os 
+import os
 
 colors = {
     "red"   : (255,0, 0),
@@ -23,13 +23,13 @@ def crop(img_mat, black_bg=False):
         val = 0
 
     # print(img)
-    
+
     def left():
         for x in range(cols):
             for y in range(rows):
                 if img[y, x] != val:
                     return x
-    
+
     left = left()
     # cv.circle(img, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv.FILLED)
 
@@ -38,7 +38,7 @@ def crop(img_mat, black_bg=False):
             for x in range(cols):
                 if img[y, x] != val:
                     return y
-    
+
     top = top()
     # cv.circle(img, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv.FILLED)
 
@@ -254,4 +254,82 @@ def displacement(height,width,center1,center2):
     (x2,y2) = center2
     return(math.sqrt((x1-x2)**2 + (y2-y1)**2)/(math.sqrt(height**2+width**2)))
 
+def otsuThreshold(img):
+    blur = cv.GaussianBlur(img,(5,5),0)
+    _, mask = cv.threshold(blur, 20, 255, cv.THRESH_BINARY)
 
+    return mask
+
+def hMaxima(image):
+    intensityArray = FindIntensity(image)
+    nBg = 0
+    sumBg = 0
+    nCells = 0
+    sumCells = 0
+    for i in range(0,256):
+        if(intensityArray[i] < 1000):
+            nBg += intensityArray[i]
+            sumBg += intensityArray[i]*i
+        else:
+            nCells += intensityArray[i]
+            sumCells += intensityArray[i]*i
+
+    Beta = 0.6
+    AveBg = sumBg/nBg
+    AveCells = sumCells/nCells
+    h = (Beta/2)*((AveCells-AveBg)**2)/(AveCells+AveBg)
+    return h
+
+def FindIntensity(image):
+    intensity = np.zeros(256, dtype=int)
+    (h, w) = image.shape
+    for row in range(0,h):
+        for col in range(0,w):
+            intensity[image[row][col]] += 1
+
+    return intensity
+
+def ContrastStretching(image):
+    (h, w) = image.shape
+    minVal = image.min()
+    maxVal = image.max()
+
+    for row in range(0,h):
+        for col in range(0,w):
+            temp = image[row][col]
+            value = (temp-minVal)*(255/(maxVal-minVal))
+            image[row][col] = value
+
+    return image
+
+def CheckPixelsEqual(image1,image2):
+    (h,w) = image1.shape
+    for row in range(0,h):
+        for col in range(0,w):
+            if(image1[row][col] == image2[row][col]):
+                return True
+    return False
+
+def hSubtraction(image,h):
+    (height,width) = image.shape
+    # print("h="+str(h))
+    new = image.copy()
+    for row in range(0,height):
+        for col in range(0,width):
+            new[row][col] = image[row][col]-h
+            if(new[row][col] < 0):
+                new[row][col] = 0
+    return ~new
+
+def nFoldDilation(image,h):
+    original = image.copy()
+    dilated = hSubtraction(image,h)
+    structElem = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
+    # print("entering loop")
+    n = 0
+    while not(CheckPixelsEqual(original,dilated)):
+        dilated = cv.dilate(image,structElem)
+        # print("loop"+str(n))
+        # cv.imshow("dilate loop"+str(n),dilated)
+        n+=1
+    return dilated

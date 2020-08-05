@@ -1,6 +1,4 @@
-
 class Cell(object):
-
     def __init__(self, i, cnt):
         self.id = i
         self.cnt = cnt
@@ -14,10 +12,11 @@ class Cell(object):
 
         self.x_velocity = 0
         self.y_velocity = 0
+
         self.dividing = False
         self.matched = False
+        self.inFrame = True
 
-    
     def __str__(self):
         return "Cell id: " + str(self.id) + " x range: " + str(self.x_min) + "-" + str(self.x_max) + " y range: " + str(self.y_min) + "-" + str(self.y_max)
 
@@ -93,3 +92,94 @@ class Cell(object):
 
     def set_matched(self):
         self.matched = True
+
+class CellManager(object):
+
+    def __init__(self, dataset):
+        self.cells = []
+        self.currImage = 0
+
+    def count_cell_divisions(self, cells):
+        count = 0
+        for cell in cells:
+            if (cell.get_dividing()):
+                count = count + 1
+        return count
+
+
+    def in_image(self, image_no, cell_id):
+        if (image_no < 0 or image_no >= len(sequence)):
+            return False
+        for cell in sequence[image_no]:
+            if (cell.get_id() == cell_id):
+                return True
+        return False
+
+    def get_cell(self, image_no, cell_id):
+        for cell in sequence[image_no]:
+            if (cell.get_id() == cell_id):
+                return cell
+        return None
+
+    def calculate_speed(self, cell_id):
+        if (in_image(cur_image - 1, cell_id)):
+            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+        return 0
+
+    def calculate_total_distance(self, cell_id):
+        total = 0
+        for i in range(cur_image - 1):
+            if (in_image(i, cell_id)):
+                total = total + distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(i + 1, cell_id).get_centre())
+        return total
+
+    def calculate_net_distance(self, cell_id):
+        for i in range(cur_image):
+            if (in_image(i, cell_id)):
+                return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+        return 0
+
+    def show_cell_details(self, x, y):
+        for cell in sequence[cur_image]:
+            cell_id = cell.get_id()
+            if (cell.contains(x, y) and in_image(cur_image, cell_id)):
+                print("Speed: " + str(calculate_speed(cell_id)))
+                total_distance = calculate_total_distance(cell_id)
+                print("Total Distance: " + str(total_distance))
+                net_distance = calculate_net_distance(cell_id)
+                print("Net Distance: " + str(net_distance))
+                confinement = 0
+                if (net_distance != 0):
+                    confinement = (total_distance / net_distance)
+                print("Confinement Ratio: " + str(confinement))
+
+    def on_click(self, event, x, y, p1, p2):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            show_cell_details(x, y)
+
+    def add_cell(self, _id, x, y, cnt):
+        # TODO: Match cells by characteristic, Don't add a cell we already have
+        self.cells.append(Cell(_id, x, y, cnt))
+
+    def count_cells(self, mask):
+        _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        
+        for i, c in enumerate(contours):
+            self.add_cell(i, c)
+
+        colour = (0, 255, 0)
+        
+        return len(contours)
+
+    def draw_bounding_box(self,image, cells):
+        drawn = image.copy()
+
+        for cell in self.cells:
+            colour = (0, 255, 0)
+            if cell.dividing:
+                colour = (0, 0, 255)
+
+            cv2.rectangle(drawn, (cell.get_x_min(), cell.get_y_min()), (cell.get_x_max(), cell.get_y_max()), colour, 1)
+            cv.circle(drawing, center, 1, color, 2)
+        
+        return drawn

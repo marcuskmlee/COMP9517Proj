@@ -6,6 +6,7 @@ from PIL import Image
 import argparse
 
 from utilis import *
+import stretch
 
 def otsuThreshold(img):
     blur = cv.GaussianBlur(img,(5,5),0)
@@ -27,9 +28,22 @@ def backgroundSubtraction(image):
 
     return O
 
-def preprocess_image(image):
+img = backgroundSubtraction(filename)
+toHMax = img.copy()
+mask = otsuThreshold(img)
+# contours = cv.findContours(mask,cv.RETR_LIST,cv.CHAIN_APPROX_NONE)
+# cv.drawContours(mask,contours,-1,(0,255,0),3)
 
     src = backgroundSubtraction(image)
     mask = otsuThreshold(src)
 
-    return mask
+cv.imwrite(path+"mask-"+name, mask)
+
+# cv.imshow("bgSub", img)
+h = hMaxima(toHMax)
+# print("h = "+str(h))
+hmax = nFoldDilation(toHMax,h)
+cv.imshow("Dilated", hmax)
+
+# print(h)
+cv.waitKey()
