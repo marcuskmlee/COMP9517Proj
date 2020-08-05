@@ -1,5 +1,5 @@
 # import the necessary packages
-import cv2
+import cv2 as cv
 import numpy as np
 import math 
 import glob 
@@ -7,13 +7,6 @@ import glob
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from scipy.spatial import distance
-
-from scipy import ndimage as ndi
-from skimage.morphology import watershed
-from skimage.feature import peak_local_max
-from sklearn.cluster import MeanShift
-
-from skimage.segmentation import flood_fill
 
 from utilis import *
 from PIL import Image
@@ -46,23 +39,16 @@ def run_PhC():
         for image_path in images:
             #image_path = "COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/t000.tif"
 
-            image = cv2.imread(image_path)
+            manager.processImage(image_path)
 
-            #processes images to segmented and thresholded cells
-            #replace with better segmentation algorithm
-            mask = PhC.preprocess_image(image)
-            mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
-
-            #counts labelled cells, measures bounding boxes and stores in list
-            pred_count = manager.count_cells(mask)
-
-            i = i + 1
+def on_click(event, x, y, p1, p2):
+    if event == cv.EVENT_LBUTTONDOWN:
+        manager.show_cell_details(x, y)
 
 datasets = ["DIC-C2DH-HeLa", "Flou-N2DL-HeLa", "PhC-C2DL-PSC"]
-cv2.namedWindow('image')
-cv2.setMouseCallback('image', on_click)
+cv.namedWindow('image')
+cv.setMouseCallback('image', on_click)
 
-sequence = np.empty(len(images), dtype=list)
 cur_image = 0
 i = 0
 

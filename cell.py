@@ -1,14 +1,18 @@
+import cv2 as cv
+import numpy as np
+
+from scipy.spatial import distance
+
+from utilis import *
+
+import PhC
+import Flou
 class Cell(object):
     def __init__(self, i, cnt):
         self.id = i
-        self.cnt = cnt
+        self.contours = cnt
         self.rect = cv.boundingRect(cnt)
         self.center, _ = cv.minEnclosingCircle(cnt)
-
-        self.x_min = int(self.rect[0])
-        self.x_max = int(self.rect[1])
-        self.y_min = int(self.x_min+self.rect[2])
-        self.y_max = int(self.y_max+self.rect[3])
 
         self.x_velocity = 0
         self.y_velocity = 0
@@ -20,47 +24,28 @@ class Cell(object):
         self.area = cv.contourArea(self.cnt)
 
     def __str__(self):
-        return "Cell id: " + str(self.id) + " x range: " + str(self.x_min) + "-" + str(self.x_max) + " y range: " + str(self.y_min) + "-" + str(self.y_max)
-
-    def update_bound(self, x, y):
-        if (x < self.x_min):
-            self.x_min = x
-        if (x > self.x_max):
-            self.x_max = x
-        if (y < self.y_min):
-            self.y_min = y
-        if (y > self.y_max):
-            self.y_max = y
+        return "Cell id: " + str(self.id) + " x range: " + str(self.x) + "-" + str(self.w) + " y range: " + str(self.y) + "-" + str(self.h)
 
     def contains(self, x, y):
-        if (x < self.x_max and x > self.x_min):
-            if (y < self.y_max and y > self.y_min):
+        if (x < self.y and x > self.x):
+            if (y < self.h and y > self.w):
                 return True
         return False
 
-    def get_dividing(self):
+    def is_dividing(self):
         return self.dividing
 
     def get_matched(self):
         return self.matched
     
     def get_centre(self):
-        return (int((self.x_min + self.x_max)/2),int((self.y_min + self.y_max)/2)) 
+        return int(self.center)
 
     def get_id(self):
         return self.id
 
-    def get_x_min(self):
-        return self.x_min
-
-    def get_x_max(self):
-        return self.x_max
-
-    def get_y_min(self):
-        return self.y_min
-
-    def get_y_max(self):
-        return self.y_max
+    def get_rect(self):
+        return self.rect
 
     def get_x_velocity(self):
         return self.x_velocity
@@ -70,18 +55,6 @@ class Cell(object):
     
     def set_id(self, new_id):
         self.id = new_id
-
-    def set_x_min(self, new_x):
-        self.x_min = new_x
-
-    def set_x_max(self, new_x):
-        self.x_max = new_x
-
-    def set_y_min(self, new_y):
-        self.y_min = new_y
-
-    def set_y_max(self, new_y):
-        self.y_max = new_y
 
     def set_x_velocity(self, new_x_velocity):
         self.x_velocity = new_x_velocity
@@ -97,54 +70,76 @@ class Cell(object):
 
 class CellManager(object):
 
-    def __init__(self, dataset):
+    def __init__(self):
         self.cells = []
         self.currImage = 0
+        self.sequence = []
 
     def count_cell_divisions(self, cells):
         count = 0
         for cell in cells:
-            if (cell.get_dividing()):
+            if (cell.is_dividing()):
                 count = count + 1
         return count
 
+    def processImage(self, filename):
+        img = cv.imread(filename, cv.COLOR_BGR2GRAY)
+
+        #processes images to segmented and thresholded cells
+        #replace with better segmentation algorithm
+        mask, img = PhC.preprocess(img)
+
+        h = hMaxima(img)
+        hmax = nFoldDilation(img, h)
+
+        #counts labelled cells, measures bounding boxes and stores in list
+        pred_count, sequence = self.count_cells(mask)
+
+        self.sequence.append(sequence)
+        drawn = self.draw_bounding_box(img)
+        show_image(drawn, "bounding box")
+
+        self.currImage = self.currImage + 1
+
 
     def in_image(self, image_no, cell_id):
-        if (image_no < 0 or image_no >= len(sequence)):
+        if (image_no < 0 or image_no >= len(self.sequence)):
             return False
-        for cell in sequence[image_no]:
+        for cell in self.sequence[image_no]:
             if (cell.get_id() == cell_id):
                 return True
         return False
 
     def get_cell(self, image_no, cell_id):
-        for cell in sequence[image_no]:
+        for cell in self.sequence[image_no]:
             if (cell.get_id() == cell_id):
                 return cell
         return None
 
     def calculate_speed(self, cell_id):
-        if (in_image(cur_image - 1, cell_id)):
-            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+        if self.in_image(self.currImage - 1, cell_id):
+            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(self.currImage, cell_id).get_centre())
         return 0
 
     def calculate_total_distance(self, cell_id):
         total = 0
-        for i in range(cur_image - 1):
+        for i in range(self.currImage - 1):
             if (in_image(i, cell_id)):
                 total = total + distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(i + 1, cell_id).get_centre())
         return total
 
     def calculate_net_distance(self, cell_id):
-        for i in range(cur_image):
-            if (in_image(i, cell_id)):
-                return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(cur_image, cell_id).get_centre())
+        for i in range(self.curImage):
+            if self.in_image(i, cell_id):
+                cell1 = get_cell(i, cell_id)
+                cell2 = get_cell(self.currImage, cell_id)
+                return distance.euclidean(cell1.get_centre(), cell2.get_centre())
         return 0
 
     def show_cell_details(self, x, y):
-        for cell in sequence[cur_image]:
+        for cell in self.sequence[self.currImage]:
             cell_id = cell.get_id()
-            if (cell.contains(x, y) and in_image(cur_image, cell_id)):
+            if (cell.contains(x, y) and self.in_image(self.currImage, cell_id)):
                 print("Speed: " + str(calculate_speed(cell_id)))
                 total_distance = calculate_total_distance(cell_id)
                 print("Total Distance: " + str(total_distance))
@@ -155,35 +150,33 @@ class CellManager(object):
                     confinement = (total_distance / net_distance)
                 print("Confinement Ratio: " + str(confinement))
 
-    def on_click(self, event, x, y, p1, p2):
-        if event == cv2.EVENT_LBUTTONDOWN:
-            show_cell_details(x, y)
-
-    def add_cell(self, _id, x, y, cnt):
+    def add_cell(self, _id, cnt):
         # TODO: Match cells by characteristic, Don't add a cell we already have
         self.cells.append(Cell(_id, x, y, cnt))
-        
-                
+        return Cell(_id, cnt)
 
     def count_cells(self, mask):
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         
+        sequence = []
         for i, c in enumerate(contours):
-            self.add_cell(i, c)
+            cell = self.add_cell(i, c)
+            sequence.append(cell)
 
         colour = (0, 255, 0)
         
-        return len(contours)
+        return len(contours), sequence
 
-    def draw_bounding_box(self,image, cells):
+    def draw_bounding_box(self,image):
         drawn = image.copy()
 
-        for cell in self.cells:
+        for cell in self.sequence[self.currImage]:
             colour = (0, 255, 0)
-            if cell.dividing:
+            if cell.is_dividing():
                 colour = (0, 0, 255)
-
-            cv2.rectangle(drawn, (cell.get_x_min(), cell.get_y_min()), (cell.get_x_max(), cell.get_y_max()), colour, 1)
-            cv.circle(drawing, center, 1, color, 2)
+            
+            x, y, w, h = cell.get_rect()
+            cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
+            cv.circle(drawn, center, -1, color, 2)
         
         return drawn
