@@ -9,6 +9,9 @@ class Cell(object):
         self.y_max = y
         self.x_velocity = 0
         self.y_velocity = 0
+        self.dividing = False
+        self.matched = False
+
     
     def __str__(self):
         return "Cell id: " + str(self.id) + " x range: " + str(self.x_min) + "-" + str(self.x_max) + " y range: " + str(self.y_min) + "-" + str(self.y_max)
@@ -65,3 +68,9 @@ class Cell(object):
 
     def set_y_velocity(self, new_y_velocity):
         self.y_velocity = new_y_velocity
+
+    def set_dividing(self):
+        self.dividing = True
+
+    def set_matched(self):
+        self.matched = True
