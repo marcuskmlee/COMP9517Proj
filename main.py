@@ -46,8 +46,8 @@ def on_click(event, x, y, p1, p2):
         manager.show_cell_details(x, y)
 
 datasets = ["DIC-C2DH-HeLa", "Flou-N2DL-HeLa", "PhC-C2DL-PSC"]
-cv.namedWindow('image')
-cv.setMouseCallback('image', on_click)
+cv.namedWindow('Bounding Box')
+cv.setMouseCallback('Bounding Box', on_click)
 
 cur_image = 0
 i = 0
