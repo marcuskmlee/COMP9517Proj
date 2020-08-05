@@ -135,7 +135,7 @@ def count_cells(image):
                         existing = True
                         cell.update_bound(x,y)
                 if (existing == False):
-                    new_cell = Cell(pixelval, x, y)
+                    new_cell = Cell(pixelval, x , y)
                     cells.append(new_cell)
 
     return cells
@@ -212,7 +212,7 @@ def on_click(event, x, y, p1, p2):
         show_cell_details(x, y)
 
 
-images = [f for f in glob.glob("COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/*")]
+images = [f for f in glob.glob("Data/PhC-C2DL-PSC/Sequence_m/*")]
 images.sort()
 
 sequence = np.empty(len(images), dtype=list)
