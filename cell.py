@@ -12,7 +12,7 @@ class Cell(object):
         self.id = i
         self.contours = cnt
         self.rect = cv.boundingRect(cnt)
-        self.center, _ = cv.minEnclosingCircle(cnt)
+        self.centre, _ = cv.minEnclosingCircle(cnt)
 
         self.x_velocity = 0
         self.y_velocity = 0
@@ -24,9 +24,10 @@ class Cell(object):
     def __str__(self):
         return "Cell id: " + str(self.id) + " x range: " + str(self.x) + "-" + str(self.w) + " y range: " + str(self.y) + "-" + str(self.h)
 
-    def contains(self, x, y):
-        if (x < self.y and x > self.x):
-            if (y < self.h and y > self.w):
+    def contains(self, px, py):
+        x, y, w, h = self.rect
+        if x < px < x+w:
+            if y < py < y+h:
                 return True
         return False
 
@@ -37,7 +38,8 @@ class Cell(object):
         return self.matched
     
     def get_centre(self):
-        return int(self.center)
+        x, y = self.centre
+        return (int(x), int(y))
 
     def get_id(self):
         return self.id
@@ -81,24 +83,28 @@ class CellManager(object):
         return count
 
     def processImage(self, filename):
-        img = cv.imread(filename, cv.COLOR_BGR2GRAY)
+        img = cv.imread(filename)
 
         #processes images to segmented and thresholded cells
         #replace with better segmentation algorithm
         mask, img = PhC.preprocess(img)
 
-        h = hMaxima(img)
-        hmax = nFoldDilation(img, h)
+        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+        h = hMaxima(gray)
+        hmax = nFoldDilation(gray, h)
 
         #counts labelled cells, measures bounding boxes and stores in list
+        mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
         pred_count, sequence = self.count_cells(mask)
 
         self.sequence.append(sequence)
         drawn = self.draw_bounding_box(img)
-        show_image(drawn, "bounding box")
+        
+        cv.imshow("Bounding Box", drawn)
+        cv.waitKey(0)
+        cv.destroyAllWindows()
 
         self.currImage = self.currImage + 1
-
 
     def in_image(self, image_no, cell_id):
         if (image_no < 0 or image_no >= len(self.sequence)):
@@ -127,7 +133,7 @@ class CellManager(object):
         return total
 
     def calculate_net_distance(self, cell_id):
-        for i in range(self.curImage):
+        for i in range(self.currImage):
             if self.in_image(i, cell_id):
                 cell1 = get_cell(i, cell_id)
                 cell2 = get_cell(self.currImage, cell_id)
@@ -138,13 +144,14 @@ class CellManager(object):
         for cell in self.sequence[self.currImage]:
             cell_id = cell.get_id()
             if (cell.contains(x, y) and self.in_image(self.currImage, cell_id)):
-                print("Speed: " + str(calculate_speed(cell_id)))
-                total_distance = calculate_total_distance(cell_id)
+                speed = self.calculate_speed(cell_id)
+                print("Speed: " + str(speed))
+                total_distance = self.calculate_total_distance(cell_id)
                 print("Total Distance: " + str(total_distance))
-                net_distance = calculate_net_distance(cell_id)
+                net_distance = self.calculate_net_distance(cell_id)
                 print("Net Distance: " + str(net_distance))
                 confinement = 0
-                if (net_distance != 0):
+                if net_distance != 0:
                     confinement = (total_distance / net_distance)
                 print("Confinement Ratio: " + str(confinement))
 
@@ -174,6 +181,6 @@ class CellManager(object):
             
             x, y, w, h = cell.get_rect()
             cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
-            cv.circle(drawn, center, -1, color, 2)
+            cv.circle(drawn, cell.get_centre(), 1, colour, 2)
         
         return drawn
