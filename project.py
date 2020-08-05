@@ -145,13 +145,21 @@ def draw_bounding_box(image, cells):
     for cell in cells:
         #red bounding box for cells
         colour = (0, 0, 255)
-        if (cell.dividing):
+        if (cell.get_dividing()):
             #blue bounding box when cell division
             colour = (255, 0, 0)
 
         drawn = cv2.rectangle(drawn, (cell.get_x_min(), cell.get_y_min()), (cell.get_x_max(), cell.get_y_max()), colour, 1)
     
     return drawn
+
+def count_cell_divisions(cells):
+    count = 0
+    for cell in cells:
+        if (cell.get_dividing()):
+            count = count + 1
+    return count
+
 
 def in_image(image_no, cell_id):
     if (image_no < 0 or image_no >= len(sequence)):
@@ -239,6 +247,8 @@ for i in range(len(images)):
     image = cv2.imread(images[i])
 
     drawn = draw_bounding_box(image, sequence[i])
+    print("Number of cells: " + str(len(sequence[i])))
+    print("Number of cell divisions: " + str(count_cell_divisions(sequence[i])))
 
     #plot_two_images(image_path, image, "Original Image", drawn, "Bounding Boxes")
     cv2.imshow('image',drawn)
