@@ -1,0 +1,5 @@
+matplotlib
+opencv-python==3.4.2.17
+scikit-image
+sklearn
+scipy
