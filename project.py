@@ -156,7 +156,7 @@ def draw_bounding_box(image, cells):
 def draw_cell_track(image, cell):
     colour = (0, 255, 0)
     thickness = 1
-    for i in range(cur_image - 1):
+    for i in range(cur_image):
         if (in_image(i, cell.get_id())):
             prev_cell = get_cell(i, cell.get_id())
             next_cell = get_cell(i+1, cell.get_id())
