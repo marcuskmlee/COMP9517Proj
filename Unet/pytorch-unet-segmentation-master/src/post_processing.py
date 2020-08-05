@@ -48,6 +48,9 @@ def postprocess(image_path):
     # Appy watershed and label the borders
     markers_watershed = cv2.watershed(img, markers_plus1)
 
+    #Erode the image to find separate nuclei
+    erode = cv2.erode(markers_watershed,(3,3))
+
     # See the watershed result in a clear white page.
     img_x, img_y = img_original.shape[0], img_original.shape[1]  # 512x512
     white, white_color = np.zeros((img_x, img_y, 3)), np.zeros((img_x, img_y, 3))
