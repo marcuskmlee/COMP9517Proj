@@ -279,3 +279,73 @@ def otsuThreshold(img):
     _, mask = cv.threshold(blur, 20, 255, cv.THRESH_BINARY)
 
     return mask
+
+def hMaxima(image):
+    intensityArray = FindIntensity(image)
+    nBg = 0
+    sumBg = 0
+    nCells = 0
+    sumCells = 0
+    for i in range(0,256):
+        if(intensityArray[i] < 1000):
+            nBg += intensityArray[i]
+            sumBg += intensityArray[i]*i 
+        else:
+            nCells += intensityArray[i]
+            sumCells += intensityArray[i]*i
+
+    Beta = 0.6
+    AveBg = sumBg/nBg
+    AveCells = sumCells/nCells
+    h = (Beta/2)*((AveCells-AveBg)**2)/(AveCells+AveBg)
+    return h
+
+def FindIntensity(image):
+    intensity = np.zeros(256, dtype=int)
+    (h, w) = image.shape
+    for row in range(0,h):
+        for col in range(0,w):
+            intensity[image[row][col]] += 1
+
+    return intensity
+
+def ContrastStretching(image):
+    (h, w) = image.shape
+    minVal = image.min()
+    maxVal = image.max()
+
+    for row in range(0,h):
+        for col in range(0,w):
+            temp = image[row][col]
+            value = (temp-minVal)*(255/(maxVal-minVal))
+            image[row][col] = value
+
+    return image
+
+def CheckPixelsEqual(image1,image2):
+    (h,w) = image1.shape
+    for row in range(0,h):
+        for col in range(0,w):
+            if(image1[row][col] == image2[row][col]):
+                return True
+    return False
+
+def hSubtraction(image,h):
+    (h,w) = image.shape
+    new = image.copy()
+    for row in range(0,h):
+        for col in range(0,w):
+            new[row][col] = image[row][col]-h
+
+    return new
+
+def nFoldDilation(image,h):
+    original = image.copy()
+    dilated = hSubtraction(image,h)
+    print("entering loop")
+    while not(CheckPixelsEqual(original,dilated)):
+        cv.dilate(image,(3,3))
+        print("loop")
+
+
+

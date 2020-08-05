@@ -6,6 +6,7 @@ from PIL import Image
 import argparse
 
 from utilis import *
+import stretch
 
 parser = argparse.ArgumentParser(description='Meanshift implementation')
 parser.add_argument('file', type=str, nargs=1, 
@@ -30,7 +31,13 @@ def backgroundSubtraction(filename):
 
     return O
 
-img = backgroundSubtraction(filename)
+bgSub = backgroundSubtraction(filename)
+# cv.imshow("bgSub", img)
+h = hMaxima(bgSub)
+hmax = nFoldDilation(bgSub,h)
+cv.imshow("Dilated", hmax)
+# print(h)
+cv.waitKey()
 mask = otsuThreshold(img)
 
 path, name = pathname(filename)
