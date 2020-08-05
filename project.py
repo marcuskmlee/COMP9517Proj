@@ -153,6 +153,22 @@ def draw_bounding_box(image, cells):
     
     return drawn
 
+def draw_cell_track(image, cell):
+    colour = (0, 255, 0)
+    thickness = 1
+    for i in range(cur_image - 1):
+        if (in_image(i, cell.get_id())):
+            prev_cell = get_cell(i, cell.get_id())
+            next_cell = get_cell(i+1, cell.get_id())
+            if (next_cell != None and prev_cell != None):
+                image = cv2.line(image, prev_cell.get_centre(), next_cell.get_centre(), colour, thickness)
+    return image
+
+def draw_tracks(image, cells):
+    for cell in cells:
+        image = draw_cell_track(image, cell)
+    return image
+
 def count_cell_divisions(cells):
     count = 0
     for cell in cells:
@@ -246,7 +262,8 @@ for i in range(len(images)):
     cur_image = i
     image = cv2.imread(images[i])
 
-    drawn = draw_bounding_box(image, sequence[i])
+    boxes = draw_bounding_box(image, sequence[i])
+    drawn = draw_tracks(boxes, sequence[i])
     print("Number of cells: " + str(len(sequence[i])))
     print("Number of cell divisions: " + str(count_cell_divisions(sequence[i])))
 
