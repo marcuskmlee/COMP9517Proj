@@ -6,6 +6,12 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 from skimage import color
 import os 
 
+colors = {
+    "red"   : (255,0, 0),
+    "green" : (0,255,0),
+    "blue"  : (0,0,255)
+}
+
 def crop(img_mat, black_bg=False):
     img = cv.cvtColor(img_mat, cv.COLOR_BGR2GRAY)
 
