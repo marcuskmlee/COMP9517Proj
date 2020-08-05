@@ -31,6 +31,21 @@ class Cell(object):
         if (y > self.y_max):
             self.y_max = y
 
+    def contains(self, x, y):
+        if (x < self.x_max and x > self.x_min):
+            if (y < self.y_max and y > self.y_min):
+                return True
+        return False
+
+    def get_dividing(self):
+        return self.dividing
+
+    def get_matched(self):
+        return self.matched
+    
+    def get_centre(self):
+        return (int((self.x_min + self.x_max)/2),int((self.y_min + self.y_max)/2)) 
+
     def get_id(self):
         return self.id
 
