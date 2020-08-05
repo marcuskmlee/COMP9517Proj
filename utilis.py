@@ -273,3 +273,9 @@ def aggregate(labels):
     # mappings = {k: v for k, v in sorted(mappings.items(), key=lambda item: item[1])}
 
     return mappings
+
+def otsuThreshold(img):
+    blur = cv.GaussianBlur(img,(5,5),0)
+    _, mask = cv.threshold(blur, 20, 255, cv.THRESH_BINARY)
+
+    return mask
