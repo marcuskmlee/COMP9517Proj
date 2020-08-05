@@ -122,23 +122,26 @@ def flood(image):
     return flooded
 
 #get properties of each cell and store are respective index, remove cells below size threshold
-def count_cells(image):
-    cells = []
-    (h, w, d) = image.shape
-    for x in range(w):
-        for y in range(h):
-            pixelval, q, p = image[y, x]
-            if (pixelval != 0):
-                existing = False
-                for cell in cells:
-                    if (cell.get_id() == pixelval):
-                        existing = True
-                        cell.update_bound(x,y)
-                if (existing == False):
-                    new_cell = Cell(pixelval, x, y)
-                    cells.append(new_cell)
+# def count_cells(image):
+#     cells = []
+#     (h, w, d) = image.shape
+#     for x in range(w):
+#         for y in range(h):
+#             pixelval, q, p = image[y, x]
+#             if (pixelval != 0):
+#                 existing = False
+#                 for cell in cells:
+#                     if (cell.get_id() == pixelval):
+#                         existing = True
+#                         cell.update_bound(x,y)
+#                 if (existing == False):
+#                     print(pixelval)
+#                     print(x)
+#                     print(y)
+#                     new_cell = Cell(pixelval, x , y)
+#                     cells.append(new_cell)
 
-    return cells
+#     return cells
 
 def draw_bounding_box(image, cells):
     drawn = image.copy()
@@ -212,7 +215,8 @@ def on_click(event, x, y, p1, p2):
         show_cell_details(x, y)
 
 
-images = [f for f in glob.glob("Data/PhC-C2DL-PSC/Sequence_1/*")]
+images = [f for f in glob.glob("Data/PhC-C2DL-PSC/Sequence_m/*")]
+
 images.sort()
 
 sequence = np.empty(len(images), dtype=list)

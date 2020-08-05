@@ -21,6 +21,8 @@ class Cell(object):
         self.matched = False
         self.inFrame = True
 
+        self.area = cv.contourArea(self.cnt)
+
     def __str__(self):
         return "Cell id: " + str(self.id) + " x range: " + str(self.x) + "-" + str(self.w) + " y range: " + str(self.y) + "-" + str(self.h)
 
@@ -151,6 +153,7 @@ class CellManager(object):
 
     def add_cell(self, _id, cnt):
         # TODO: Match cells by characteristic, Don't add a cell we already have
+        self.cells.append(Cell(_id, x, y, cnt))
         return Cell(_id, cnt)
 
     def count_cells(self, mask):
@@ -178,3 +181,31 @@ class CellManager(object):
             cv.circle(drawn, cell.get_centre(), 1, colour, 2)
         
         return drawn
+
+    def matchCells(self,image):
+        (h,w) = image.shape
+        prevCells = sequence[self.currImage-1]
+        currCells = sequence[self.currImage]
+        numPrev = len(prevCells)
+        numCurr = len(currCells)
+        matchingMatrix = np.full((numCurr,numPrev),100)
+        minMatch = np.full((numCurr,2),100)
+        for i in range(numCurr):
+            for j in range(numPrev):
+                displacement = displacement(h,w,currCells[i].center, prevCells[j].center)
+                diffArea = currCells[i].area - prevCells[j].area
+                matchingMatrix[i][j] = displacement+diffArea
+                if (displacement+diffArea < minMatch[i][0]):
+                    minMatch[i][0] = displacement+diffArea
+                    minmatch[i][1] = j
+
+
+
+        
+
+
+
+
+
+
+    

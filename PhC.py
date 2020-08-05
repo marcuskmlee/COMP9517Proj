@@ -27,6 +27,14 @@ def backgroundSubtraction(image):
 
     return O
 
+img = backgroundSubtraction(filename)
+toHMax = img.copy()
+mask = otsuThreshold(img)
+# contours = cv.findContours(mask,cv.RETR_LIST,cv.CHAIN_APPROX_NONE)
+# cv.drawContours(mask,contours,-1,(0,255,0),3)
+
+src = backgroundSubtraction(image)
+mask = otsuThreshold(src)
 def preprocess(image):
     src = backgroundSubtraction(image)
     mask = otsuThreshold(src)
