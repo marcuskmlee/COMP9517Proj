@@ -7,19 +7,16 @@ import argparse
 
 from utilis import *
 
-parser = argparse.ArgumentParser(description='Meanshift implementation')
-parser.add_argument('file', type=str, nargs=1, 
-    help='Path to file')
+def otsuThreshold(img):
+    blur = cv.GaussianBlur(img,(5,5),0)
+    _, mask = cv.threshold(blur, 20, 255, cv.THRESH_BINARY)
 
-args = parser.parse_args()
-filename = args.file[0]
+    return mask
 
-def backgroundSubtraction(filename):
+def backgroundSubtraction(image):
     size = (30, 30)
 
     elem_type = cv.MORPH_ELLIPSE
-
-    image = cv.imread(filename, cv.IMREAD_GRAYSCALE)
 
     kernel = cv.getStructuringElement(elem_type, size)
 
@@ -30,9 +27,9 @@ def backgroundSubtraction(filename):
 
     return O
 
-img = backgroundSubtraction(filename)
-mask = otsuThreshold(img)
+def preprocess_image(image):
 
-path, name = pathname(filename)
+    src = backgroundSubtraction(image)
+    mask = otsuThreshold(src)
 
-cv.imwrite(path+"mask-"+name, mask)
+    return mask

@@ -1,12 +1,17 @@
 
 class Cell(object):
 
-    def __init__(self, i, x, y):
+    def __init__(self, i, cnt):
         self.id = i
-        self.x_min = x
-        self.x_max = x
-        self.y_min = y
-        self.y_max = y
+        self.cnt = cnt
+        self.rect = cv.boundingRect(cnt)
+        self.center, _ = cv.minEnclosingCircle(cnt)
+
+        self.x_min = int(self.rect[0])
+        self.x_max = int(self.rect[1])
+        self.y_min = int(self.x_min+self.rect[2])
+        self.y_max = int(self.y_max+self.rect[3])
+
         self.x_velocity = 0
         self.y_velocity = 0
         self.dividing = False
@@ -46,7 +51,6 @@ class Cell(object):
 
     def get_y_velocity(self):
         return self.y_velocity
-
     
     def set_id(self, new_id):
         self.id = new_id

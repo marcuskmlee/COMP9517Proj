@@ -236,37 +236,6 @@ def show_image(image, title):
     plt.title(title)
     plt.show()
 
-def _meanshift(img_mat):
-    colour_samples = np.reshape(img_mat, [-1,3])
-
-    bandwidth = estimate_bandwidth(colour_samples, quantile=0.2, n_samples=500)
-
-    ms_clf = MeanShift(bandwidth=bandwidth, bin_seeding=True)
-    ms_clf.fit(colour_samples)
-
-    ms_labels = ms_clf.labels_
-
-    # Step 4 - reshape ms_labels back to the original image shape 
-    # for displaying the segmentation output 
-    ms_labels = np.reshape(ms_labels, img_mat.shape[:2])
-
-    # print(np.unique(ms_labels))
-
-    # print(mappings)
-
-    # segmentedImg = cluster_centers[ms_labels]
-    
-    ms_g = graph.rag_mean_color(img_mat, ms_labels)
-
-    ms_labels2 = graph.merge_hierarchical(ms_labels, ms_g, thresh=35, rag_copy=False,
-                                   in_place_merge=True,
-                                   merge_func=merge_mean_color,
-                                   weight_func=weight_mean_color)
-                                   
-    ms_out = color.label2rgb(ms_labels, img_mat, kind='avg', bg_label=0)
-
-    return ms_labels, ms_out
-
 def aggregate(labels):
     mappings = dict.fromkeys(np.unique(labels), 0)
 
@@ -279,9 +248,3 @@ def aggregate(labels):
     # mappings = {k: v for k, v in sorted(mappings.items(), key=lambda item: item[1])}
 
     return mappings
-
-def otsuThreshold(img):
-    blur = cv.GaussianBlur(img,(5,5),0)
-    _, mask = cv.threshold(blur, 20, 255, cv.THRESH_BINARY)
-
-    return mask
