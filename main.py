@@ -6,6 +6,7 @@ import glob
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from scipy.spatial import distance
 
 from scipy import ndimage as ndi
 from skimage.morphology import watershed
@@ -21,7 +22,7 @@ import math
 import PhC
 import Flou
 
-from cell import Cell
+from cell import Cell, CellManager
 import argparse
 
 parser = argparse.ArgumentParser(description='Comp9517 Project')
@@ -34,41 +35,13 @@ parser.add_argument('--PhC', nargs='?', default=False, const=True,
 
 args = parser.parse_args()
 
-def add_cell(_id, x, y, cnt):
-    cells.append(Cell(_id, x, y, cnt))
-
-def count_cells(mask):
-    _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-    
-    for i, c in enumerate(contours):
-        add_cell(i, c)
-
-    colour = (0, 255, 0)
-    
-    return len(contours)
-
-def draw_bounding_box(image, cells):
-    drawn = image.copy()
-
-    for cell in cells:
-        colour = (0, 255, 0)
-        if cell.dividing:
-            colour = (0, 0, 255)
-
-        cv2.rectangle(drawn, (cell.get_x_min(), cell.get_y_min()), (cell.get_x_max(), cell.get_y_max()), colour, 1)
-        cv.circle(drawing, center, 1, color, 2)
-    
-    return drawn
+manager = CellManager()
 
 def run_PhC():
     sequences = ["Sequence_2", "Sequence_1", "Sequence_3", "Sequence_4"]
     for folder in sequences:    
         images = [f for f in glob.glob(f"./Data/{datasets[2]}/{folder}/*")]
         images.sort()
-        cells = []
-
-        sequence = np.empty(len(images), dtype=list)
-        i = 0
 
         for image_path in images:
             #image_path = "COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/t000.tif"
@@ -80,12 +53,18 @@ def run_PhC():
             mask = PhC.preprocess_image(image)
             mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
 
-            show_image(mask, "Mask")
-
             #counts labelled cells, measures bounding boxes and stores in list
-            pred_count = count_cells(mask, image_path)
+            pred_count = manager.count_cells(mask)
+
+            i = i + 1
 
 datasets = ["DIC-C2DH-HeLa", "Flou-N2DL-HeLa", "PhC-C2DL-PSC"]
+cv2.namedWindow('image')
+cv2.setMouseCallback('image', on_click)
+
+sequence = np.empty(len(images), dtype=list)
+cur_image = 0
+i = 0
 
 if args.DIC:
     run_DIC()
