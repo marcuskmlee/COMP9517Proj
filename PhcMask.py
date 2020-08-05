@@ -31,15 +31,20 @@ def backgroundSubtraction(filename):
 
     return O
 
-bgSub = backgroundSubtraction(filename)
-# cv.imshow("bgSub", img)
-h = hMaxima(bgSub)
-hmax = nFoldDilation(bgSub,h)
-cv.imshow("Dilated", hmax)
-# print(h)
-cv.waitKey()
+img = backgroundSubtraction(filename)
+
 mask = otsuThreshold(img)
 
 path, name = pathname(filename)
 
 cv.imwrite(path+"mask-"+name, mask)
+
+# cv.imshow("bgSub", img)
+h = hMaxima(img)
+# print("h = "+str(h))
+hmax = nFoldDilation(img,h)
+cv.imshow("Dilated", hmax)
+
+# print(h)
+cv.waitKey()
+

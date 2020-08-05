@@ -331,21 +331,29 @@ def CheckPixelsEqual(image1,image2):
     return False
 
 def hSubtraction(image,h):
-    (h,w) = image.shape
+    (height,width) = image.shape
+    # print("h="+str(h))
     new = image.copy()
-    for row in range(0,h):
-        for col in range(0,w):
+    for row in range(0,height):
+        for col in range(0,width):
             new[row][col] = image[row][col]-h
-
-    return new
+            if(new[row][col] < 0):
+                new[row][col] = 0
+    return ~new
 
 def nFoldDilation(image,h):
     original = image.copy()
     dilated = hSubtraction(image,h)
-    print("entering loop")
+    structElem = cv.getStructuringElement(cv.MORPH_ELLIPSE,(5,5))
+    # print("entering loop")
+    n = 0
     while not(CheckPixelsEqual(original,dilated)):
-        cv.dilate(image,(3,3))
-        print("loop")
+        dilated = cv.dilate(image,structElem)
+        # print("loop"+str(n))
+        # cv.imshow("dilate loop"+str(n),dilated)
+        n+=1
+    return dilated
+        
 
 
 
