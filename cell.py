@@ -180,3 +180,31 @@ class CellManager(object):
             cv.circle(drawn, center, -1, color, 2)
         
         return drawn
+
+    def matchCells(self,image):
+        (h,w) = image.shape
+        prevCells = sequence[self.currImage-1]
+        currCells = sequence[self.currImage]
+        numPrev = len(prevCells)
+        numCurr = len(currCells)
+        matchingMatrix = np.full((numCurr,numPrev),100)
+        minMatch = np.full((numCurr,2),100)
+        for i in range(numCurr):
+            for j in range(numPrev):
+                displacement = displacement(h,w,currCell.center, prevCell.center)
+                diffArea = currCell.area - prevCell.area
+                matchingMatrix[i][j] = displacement+diffArea
+                if (displacement+diffArea < minMatch[i][0]):
+                    minMatch[i][0] = displacement+diffArea
+                    minmatch[i][1] = j
+
+
+
+        
+
+
+
+
+
+
+    
