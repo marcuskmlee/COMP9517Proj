@@ -14,12 +14,10 @@ def otsuThreshold(img):
     return mask
 
 def backgroundSubtraction(image):
-    size = (30, 30)
+    size = (20, 20)
 
     elem_type = cv.MORPH_ELLIPSE
-
     kernel = cv.getStructuringElement(elem_type, size)
-
     tophat = cv.morphologyEx(image, cv.MORPH_TOPHAT, kernel)
 
     kernel1 = np.ones((5,5),np.uint8)
@@ -27,19 +25,21 @@ def backgroundSubtraction(image):
 
     return O
 
-img = backgroundSubtraction(filename)
-toHMax = img.copy()
-mask = otsuThreshold(img)
+# img = backgroundSubtraction(filename)
+# toHMax = img.copy()
+# mask = otsuThreshold(img)
 # contours = cv.findContours(mask,cv.RETR_LIST,cv.CHAIN_APPROX_NONE)
 # cv.drawContours(mask,contours,-1,(0,255,0),3)
 
-src = backgroundSubtraction(image)
-mask = otsuThreshold(src)
+# src = backgroundSubtraction(image)
+# mask = otsuThreshold(src)
 def preprocess(image):
     src = backgroundSubtraction(image)
     mask = otsuThreshold(src)
 
-    return mask, src
+    mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
+
+    return mask
 
 # img = backgroundSubtraction(filename)
 # toHMax = img.copy()

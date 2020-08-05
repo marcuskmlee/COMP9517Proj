@@ -38,11 +38,12 @@ def run_PhC():
 
         for image_path in images:
             #image_path = "COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/t000.tif"
-            img = cv.imread(filename)
+            img = cv.imread(image_path)
 
             #processes images to segmented and thresholded cells
             #replace with better segmentation algorithm
-            mask, img = PhC.preprocess(img)
+            mask = PhC.preprocess(img)
+            plot_two("Mask", img, "Original", mask, "Mask")
             manager.processImage(img, mask)
 
 def run_DIC():
@@ -61,10 +62,22 @@ def run_DIC():
             mask = cv.imread(mask_path, cv.COLOR_BGR2GRAY)
 
             kernel = np.ones((10,10),np.uint8)
-            closing = cv.morphologyEx(img, cv.MORPH_CLOSE, kernel)
+            closing = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
 
-            plot_two("Clsosing", mask, "Original", closing, "Closed")
+            manager.processImage(img, mask)
 
+def run_Flou():
+    sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
+    for folder in sequences:
+        images = [f for f in glob.glob(f"./Data/{datasets[1]}/{folder}/*")]
+        images.sort()
+
+        for image_path in images:
+            img = cv.imread(image_path)
+
+            #TODO: preprocessing
+
+            manager.processImage(img, img)
 
 def on_click(event, x, y, p1, p2):
     if event == cv.EVENT_LBUTTONDOWN:

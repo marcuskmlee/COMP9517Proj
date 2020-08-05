@@ -5,6 +5,8 @@ from scipy.spatial import distance
 
 from utilis import *
 
+from segment import *
+
 import PhC
 import Flou
 class Cell(object):
@@ -86,12 +88,33 @@ class CellManager(object):
 
     def processImage(self, img, mask):
         gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        h = hMaxima(gray)
-        hmax = nFoldDilation(gray, h)
+
+        maximaKernel = np.ones((5,5),np.uint8)
+        maximaKernel[2,2] = 0
+        # opening = cv.morphologyEx(gray, cv.MORPH_OPEN, averaginKernel)
+        # intensityArray = FindIntensity(opening)
+        # # print(intensity)
+        # h = hMaxima(opening, intensityArray)
+
+        print(gray.shape)
+        print(mask.shape)
+
+        gray = cv.GaussianBlur(gray, (5,5), 0)
+        gray = cv.bitwise_and(gray, mask)
+        plot_two("Original vs hMaxima", img, "Original", gray, "h")
+
+        maxima = cv.dilate(gray, maximaKernel, iterations = 5)
+        maxima = cv.compare(gray, maxima, cv.CMP_GE)
+        plot_two("Original vs hMaxima", img, "maxima", maxima, "h")
+
+        minima = cv.erode(gray, maximaKernel, iterations = 1)
+        minima = cv.compare(gray, minima, cv.CMP_GT)
+        maxima = cv.bitwise_and(maxima, minima)
+        maxima = cv.GaussianBlur(maxima, (5,5), 0)
+        plot_two("Original vs minima", img, "Original", maxima, "h")
 
         #counts labelled cells, measures bounding boxes and stores in list
-        mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
-        pred_count, sequence = self.count_cells(mask)
+        pred_count, sequence = self.count_cells(maxima)
 
         self.sequence.append(sequence)
         drawn = self.draw_bounding_box(img)
@@ -152,8 +175,7 @@ class CellManager(object):
                 print("Confinement Ratio: " + str(confinement))
 
     def add_cell(self, _id, cnt):
-        # TODO: Match cells by characteristic, Don't add a cell we already have
-        self.cells.append(Cell(_id, x, y, cnt))
+        self.cells.append(Cell(_id, cnt))
         return Cell(_id, cnt)
 
     def count_cells(self, mask):

@@ -2,6 +2,7 @@ import imutils
 import cv2
 import numpy as np
 import argparse
+from utilis import plot_two
 
 def SegmentNuclei(image, N):
 	blur = cv2.GaussianBlur(image,(N,N))
@@ -125,20 +126,20 @@ def MinMaxFilter(image, N, M):
 	return O
 
 
-parser = argparse.ArgumentParser(description='stretching')
-parser.add_argument('file', type=str, nargs=1, help='Path to file')
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser(description='stretching')
+	parser.add_argument('file', type=str, nargs=1, help='Path to file')
 
-args = parser.parse_args()
-filename = args.file[0]
+	args = parser.parse_args()
+	filename = args.file[0]
 
-I = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
-CS = ContrastStretching(I)
-minmax = MinMaxFilter(CS, 20, 1)
-intensityArray = FindIntensity(minmax)
-# print(intensity)
-h = hMaxima(minmax, intensityArray)
-print(h)
-cv2.imshow("MinMaxFilter",minmax)
-cv2.waitKey()
+	I = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
 
+	CS = ContrastStretching(I)
+	minmax = MinMaxFilter(CS, 20, 1)
+	intensityArray = FindIntensity(minmax)
+	# print(intensity)
+	h = hMaxima(minmax, intensityArray)
 
+	print(h)
+	# plot_two("H Maxima", I, "Original", minmax, "MinMaxed")
