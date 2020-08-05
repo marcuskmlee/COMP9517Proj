@@ -248,3 +248,10 @@ def aggregate(labels):
     # mappings = {k: v for k, v in sorted(mappings.items(), key=lambda item: item[1])}
 
     return mappings
+
+def displacement(height,width,center1,center2):
+    (x1,y1) = center1
+    (x2,y2) = center2
+    return(math.sqrt((x1-x2)**2 + (y2-y1)**2)/(math.sqrt(height**2+width**2)))
+
+
