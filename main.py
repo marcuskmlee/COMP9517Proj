@@ -31,15 +31,40 @@ args = parser.parse_args()
 manager = CellManager()
 
 def run_PhC():
-    sequences = ["Sequence_2", "Sequence_1", "Sequence_3", "Sequence_4"]
+    sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
     for folder in sequences:    
         images = [f for f in glob.glob(f"./Data/{datasets[2]}/{folder}/*")]
         images.sort()
 
         for image_path in images:
             #image_path = "COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/t000.tif"
+            img = cv.imread(filename)
 
-            manager.processImage(image_path)
+            #processes images to segmented and thresholded cells
+            #replace with better segmentation algorithm
+            mask, img = PhC.preprocess(img)
+            manager.processImage(img, mask)
+
+def run_DIC():
+    sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
+    masks = ["Sequence_1_Preds", "Sequence_2_Preds", "Sequence_3_Preds", "Sequence_4_Preds"]
+    dataset = zip(sequences, masks)
+    for image_folder, mask_folder in dataset:    
+        images = [f for f in glob.glob(f"./Data/{datasets[0]}/{image_folder}/*")]
+        masks = [f for f in glob.glob(f"./Data/{datasets[0]}/{mask_folder}/*")]
+        images.sort()
+        masks.sort()
+
+        data = zip(images, masks)
+        for image_path, mask_path in data:
+            img = cv.imread(image_path)
+            mask = cv.imread(mask_path, cv.COLOR_BGR2GRAY)
+
+            kernel = np.ones((10,10),np.uint8)
+            closing = cv.morphologyEx(img, cv.MORPH_CLOSE, kernel)
+
+            plot_two("Clsosing", mask, "Original", closing, "Closed")
+
 
 def on_click(event, x, y, p1, p2):
     if event == cv.EVENT_LBUTTONDOWN:

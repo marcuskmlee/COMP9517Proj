@@ -82,13 +82,7 @@ class CellManager(object):
                 count = count + 1
         return count
 
-    def processImage(self, filename):
-        img = cv.imread(filename)
-
-        #processes images to segmented and thresholded cells
-        #replace with better segmentation algorithm
-        mask, img = PhC.preprocess(img)
-
+    def processImage(self, img, mask):
         gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         h = hMaxima(gray)
         hmax = nFoldDilation(gray, h)

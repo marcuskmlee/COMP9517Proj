@@ -110,7 +110,7 @@ def save_prediction_image(stacked_img, im_name, epoch, save_folder_name="result_
     img_cont_np = img_cont.astype('uint8')
     img_cont = Image.fromarray(img_cont_np)
     # organize images in every epoch
-    desired_path = save_folder_name + '/epoch_' + str(epoch) + '/'
+    desired_path = save_folder_name
     # Create the path if it does not exist
     if not os.path.exists(desired_path):
         os.makedirs(desired_path)
