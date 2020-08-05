@@ -32,17 +32,19 @@ def backgroundSubtraction(filename):
     return O
 
 img = backgroundSubtraction(filename)
-
+toHMax = img.copy()
 mask = otsuThreshold(img)
+# contours = cv.findContours(mask,cv.RETR_LIST,cv.CHAIN_APPROX_NONE)
+# cv.drawContours(mask,contours,-1,(0,255,0),3)
 
 path, name = pathname(filename)
 
 cv.imwrite(path+"mask-"+name, mask)
 
 # cv.imshow("bgSub", img)
-h = hMaxima(img)
+h = hMaxima(toHMax)
 # print("h = "+str(h))
-hmax = nFoldDilation(img,h)
+hmax = nFoldDilation(toHMax,h)
 cv.imshow("Dilated", hmax)
 
 # print(h)

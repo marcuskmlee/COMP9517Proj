@@ -204,7 +204,7 @@ def on_click(event, x, y, p1, p2):
         show_cell_details(x, y)
 
 
-images = [f for f in glob.glob("COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/*")]
+images = [f for f in glob.glob("Data/PhC-C2DL-PSC/Sequence_1/*")]
 images.sort()
 
 sequence = np.empty(len(images), dtype=list)
@@ -239,6 +239,6 @@ for i in range(len(images)):
     image = cv2.imread(images[i])
     drawn = draw_bounding_box(image, sequence[i])
 
-    #plot_two_images(image_path, image, "Original Image", drawn, "Bounding Boxes")
-    cv2.imshow('image',drawn)
-    cv2.waitKey(0)
+    # plot_two_images(image_path, image, "Original Image", drawn, "Bounding Boxes")
+    cv2.imshow("image",drawn)
+    cv2.waitKey()
