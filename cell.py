@@ -296,8 +296,6 @@ class CellManager(object):
         return drawn
 
     def matchCells(self,image):
-        print(self.currImage)
-        print (self.sequence)
         if self.currImage == 0:
             return
         
