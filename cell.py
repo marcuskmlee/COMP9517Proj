@@ -294,6 +294,9 @@ class CellManager(object):
         return drawn
 
     def matchCells(self,image):
+        if self.currImage == 0:
+            return
+        
         h,w = image.shape
         prevCells = self.sequence[self.currImage-1]
         currCells = self.sequence[self.currImage]
@@ -341,4 +344,5 @@ class CellManager(object):
 
         for i in range(numCurr):
             if (matches[i] != -1):
-                self.sequence[self.currImage][i].set_id(self.sequence[self.currImage][int(matches[i])].get_id())
+                cell = self.sequence[self.currImage][i]
+                cell.set_id(self.sequence[self.currImage][int(matches[i])].get_id())
