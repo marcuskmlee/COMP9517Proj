@@ -32,7 +32,7 @@ args = parser.parse_args()
 
 def run_PhC():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
-    manager = CellManager(demo=args.demo, dataset="PhC")
+    
     for folder in sequences:    
         images = [f for f in glob.glob(f"./Data/{datasets[2]}/{folder}/*")]
         images.sort()
@@ -92,6 +92,8 @@ def run_Fluo():
 
             show = images.index(image_path) == len(images)-1
             manager.processImage(img, mask, show=show)
+
+manager = CellManager(demo=args.demo)
 
 def on_click(event, x, y, p1, p2):
     if event == cv.EVENT_LBUTTONDOWN:

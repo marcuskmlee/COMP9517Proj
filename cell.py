@@ -86,14 +86,22 @@ class Cell(object):
 
 class CellManager(object):
 
-    def __init__(self, dataset, demo=False):
+    def __init__(self, dataset, demo=False, dataset):
         self.currImage = 0
         self.sequence = []
         self.demo = demo
-        self.blurSize = 0
+        self.blurSize = 5
         self.h = 5
         self.image = []
 
+        if dataset == "PhC":
+            self.h = 16
+            self.blurSize = 7
+        elif dataset == "Fluo":
+            self.h = 10
+            self.blurSize = 19
+
+    def dataset(self, dataset):
         if dataset == "PhC":
             self.h = 16
             self.blurSize = 7
@@ -163,7 +171,7 @@ class CellManager(object):
         self.matchCells(gray)
         drawn = self.draw_bounding_box(gray)
 
-        if show:
+        if True:
             self.show(drawn)
 
         print(f"Processed image: {self.currImage}")
