@@ -134,6 +134,7 @@ class CellManager(object):
 
         local_maxima = extrema.local_maxima(img, connectivity=5)
         label_maxima = label(local_maxima)
+
         overlay = color.label2rgb(label_maxima, img, alpha=0.7, bg_label=0,
                                 bg_color=None, colors=[(1, 0, 0)])
 
@@ -149,7 +150,8 @@ class CellManager(object):
         return h_maxima
 
     def processImage(self, gray, mask, show=False):
-        nuclei = self.hMaxima(gray, mask)
+        # nuclei = self.hMaxima(gray, mask)
+        nuclei = mask.copy()
         self.image = gray
 
         mask = clear_border(mask)
@@ -317,10 +319,10 @@ class CellManager(object):
         for i in range(numCurr):
             sortedMatrix[i] = quicksortMatrix(matchingMatrix[i])
 
-        print("Original")
-        print(matchingMatrix)
-        print("Sorted")
-        print(sortedMatrix)
+        # print("Original")
+        # print(matchingMatrix)
+        # print("Sorted")
+        # print(sortedMatrix)
 
         matches = np.zeros(numCurr)
         for i in range(numCurr):
