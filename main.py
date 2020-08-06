@@ -32,7 +32,7 @@ args = parser.parse_args()
 
 def run_PhC():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
-    
+    manager.dataset(dataset="PhC")
     for folder in sequences:    
         images = [f for f in glob.glob(f"./Data/{datasets[2]}/{folder}/*")]
         images.sort()
@@ -54,7 +54,7 @@ def run_DIC():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
     masks = ["Sequence_1_Preds", "Sequence_2_Preds", "Sequence_3_Preds", "Sequence_4_Preds"]
     dataset = zip(sequences, masks)
-    manager = CellManager(demo=args.demo, dataset="DIC")
+    manager.dataset(dataset="DIC")
     for image_folder, mask_folder in dataset:    
         images = [f for f in glob.glob(f"./Data/{datasets[0]}/{image_folder}/*")]
         masks = [f for f in glob.glob(f"./Data/{datasets[0]}/{mask_folder}/*")]
@@ -74,7 +74,7 @@ def run_DIC():
 
 def run_Fluo():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
-    manager = CellManager(demo=args.demo, dataset="Fluo")
+    manager.dataset(dataset="Fluo")
     for folder in sequences:
         images = [f for f in glob.glob(f"./Data/{datasets[1]}/{folder}/*")]
         images.sort()
