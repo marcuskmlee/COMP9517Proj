@@ -4,16 +4,19 @@ import math
 
 from scipy.spatial import distance
 
+from skimage.measure import label
+from skimage import data
+from skimage import color
+from skimage.morphology import extrema
+from skimage import exposure
+
 from utilis import *
 
 from segment import *
-
-import PhC
-import Flou
 class Cell(object):
     def __init__(self, i, cnt):
         self.id = i
-        self.contours = cnt
+        self.cnt = cnt
         self.rect = cv.boundingRect(cnt)
         self.centre, _ = cv.minEnclosingCircle(cnt)
 
@@ -75,10 +78,11 @@ class Cell(object):
 
 class CellManager(object):
 
-    def __init__(self):
+    def __init__(self, demo=False):
         self.cells = []
         self.currImage = 0
         self.sequence = []
+        self.demo = demo
 
     def count_cell_divisions(self, cells):
         count = 0
@@ -87,45 +91,71 @@ class CellManager(object):
                 count = count + 1
         return count
 
-    def processImage(self, img, mask):
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    def hMaxima(self, img, mask):
+        # maximaKernel = np.ones((5,5),np.uint8)
+        # maximaKernel[2,2] = 0
 
-        maximaKernel = np.ones((5,5),np.uint8)
-        maximaKernel[2,2] = 0
-        # opening = cv.morphologyEx(gray, cv.MORPH_OPEN, averaginKernel)
-        # intensityArray = FindIntensity(opening)
-        # # print(intensity)
-        # h = hMaxima(opening, intensityArray)
+        # gray = cv.GaussianBlur(gray, (5,5), 0)
+        # gray = cv.bitwise_and(gray, mask)
+        # if self.demo:
+        #     show_image(gray, "Remove background")
 
-        print(gray.shape)
-        print(mask.shape)
+        # maxima = cv.dilate(gray, maximaKernel, iterations = 5)
+        # maxima = cv.compare(gray, maxima, cv.CMP_GE)
+        # if self.demo:
+        #     plot_two("Find Maxima", gray, "Original", maxima, "Background subtracted")
 
-        gray = cv.GaussianBlur(gray, (5,5), 0)
-        gray = cv.bitwise_and(gray, mask)
-        plot_two("Original vs hMaxima", img, "Original", gray, "h")
+        # minima = cv.erode(gray, maximaKernel, iterations = 1)
+        # minima = cv.compare(gray, minima, cv.CMP_GT)
+        # maxima = cv.bitwise_and(maxima, minima)
+        # maxima = cv.GaussianBlur(maxima, (5,5), 0)
 
-        maxima = cv.dilate(gray, maximaKernel, iterations = 5)
-        maxima = cv.compare(gray, maxima, cv.CMP_GE)
-        plot_two("Original vs hMaxima", img, "maxima", maxima, "h")
+        img = cv.GaussianBlur(img, (5,5), 0)
+        img = cv.bitwise_and(img, mask)
 
-        minima = cv.erode(gray, maximaKernel, iterations = 1)
-        minima = cv.compare(gray, minima, cv.CMP_GT)
-        maxima = cv.bitwise_and(maxima, minima)
-        maxima = cv.GaussianBlur(maxima, (5,5), 0)
-        plot_two("Original vs minima", img, "Original", maxima, "h")
+        local_maxima = extrema.local_maxima(img, connectivity=5)
+        label_maxima = label(local_maxima)
+        overlay = color.label2rgb(label_maxima, img, alpha=0.7, bg_label=0,
+                                bg_color=None, colors=[(1, 0, 0)])
+
+        h = 10
+        h_maxima = extrema.h_maxima(img, h)
+        label_h_maxima = label(h_maxima)
+        overlay_h = color.label2rgb(label_h_maxima, img, alpha=0.7, bg_label=0,
+                                    bg_color=None, colors=[(1, 0, 0)])
+
+        # show_image(overlay, "local")
+        if self.demo:
+            show_image(overlay_h, "regional")
+
+        return h_maxima
+
+    def processImage(self, gray, mask, show=False):
+        nuclei = self.hMaxima(gray, mask)
+        if self.demo:
+            plot_two("Original vs nuclei", gray, "Original", nuclei, "Nuclei segmented")
 
         #counts labelled cells, measures bounding boxes and stores in list
-        pred_count, sequence = self.count_cells(maxima)
+        pred_count, sequence = self.count_cells(mask, nuclei)
 
         self.sequence.append(sequence)
+<<<<<<< HEAD
         self.matchCells(img)
         drawn = self.draw_bounding_box(img)
         
+=======
+        drawn = self.draw_bounding_box(gray)
+
+        if show:
+            self.show(drawn)
+
+        self.currImage = self.currImage + 1
+
+    def show(self, drawn):
+>>>>>>> 868b574065caae63a7a1eedc8fd9d8fdc942297d
         cv.imshow("Bounding Box", drawn)
         cv.waitKey(0)
         cv.destroyAllWindows()
-
-        self.currImage = self.currImage + 1
 
     def in_image(self, image_no, cell_id):
         if (image_no < 0 or image_no >= len(self.sequence)):
@@ -143,21 +173,21 @@ class CellManager(object):
 
     def calculate_speed(self, cell_id):
         if self.in_image(self.currImage - 1, cell_id):
-            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(self.currImage, cell_id).get_centre())
+            return distance.euclidean(self.get_cell(i, cell_id).get_centre(), self.get_cell(self.currImage, cell_id).get_centre())
         return 0
 
     def calculate_total_distance(self, cell_id):
         total = 0
         for i in range(self.currImage - 1):
             if (in_image(i, cell_id)):
-                total = total + distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(i + 1, cell_id).get_centre())
+                total = total + distance.euclidean(self.get_cell(i, cell_id).get_centre(), self.get_cell(i + 1, cell_id).get_centre())
         return total
 
     def calculate_net_distance(self, cell_id):
         for i in range(self.currImage):
             if self.in_image(i, cell_id):
-                cell1 = get_cell(i, cell_id)
-                cell2 = get_cell(self.currImage, cell_id)
+                cell1 = self.get_cell(i, cell_id)
+                cell2 = self.get_cell(self.currImage, cell_id)
                 return distance.euclidean(cell1.get_centre(), cell2.get_centre())
         return 0
 
@@ -180,8 +210,8 @@ class CellManager(object):
         self.cells.append(Cell(_id, cnt))
         return Cell(_id, cnt)
 
-    def count_cells(self, mask):
-        _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    def count_cells(self, mask, nuclei):
+        _, contours, _ = cv.findContours(nuclei, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         
         sequence = []
         for i, c in enumerate(contours):
@@ -257,15 +287,3 @@ class CellManager(object):
                 self.sequence[self.currImage][i].set_id(self.sequence[self.currImage][int(matches[i])].get_id())
 
 
-
-
-
-
-        
-
-
-
-
-
-
-    

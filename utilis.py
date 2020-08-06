@@ -230,7 +230,7 @@ def stretch(image):
 
     draw = np.uint8(draw)
 
-    return draw
+    return draw, minVal, maxVal
 
 def show_image(image, title):
     plt.imshow(image)

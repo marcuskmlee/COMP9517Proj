@@ -37,7 +37,7 @@ def preprocess(image):
     src = backgroundSubtraction(image)
     mask = otsuThreshold(src)
 
-    mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
+    # mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
 
     return mask
 

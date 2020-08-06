@@ -9,29 +9,26 @@ from modules import *
 from save_history import *
 import matplotlib.pyplot as plt
 
-dataset = ["DIC-C2DH-HeLa", "Fluo-N2DL-HeLa", "PhC-C2DL-PSC"]
+dataset = "DIC-C2DH-HeLa"
+sequences = ["Sequence_2", "Sequence_3", "Sequence_4"]
+masks = ["Sequence_2_Preds", "Sequence_3_Preds", "Sequence_4_Preds"]
+folders = zip(sequences, masks)
 
-SEM_test = SEMDataTest(f"../../../Data/{dataset[0]}/Sequence 1/")
+for image_folder, mask_folder in folders:
+        print(f"dataset: ../../Data/{dataset}/{image_folder}/")
+        SEM_test = SEMDataTest(f"../../Data/{dataset}/{image_folder}/")
 
-SEM_test_load = \
-    torch.utils.data.DataLoader(dataset=SEM_test,
-                                num_workers=3, batch_size=1, shuffle=False)
+        SEM_test_load = \
+        torch.utils.data.DataLoader(dataset=SEM_test,
+                                        num_workers=3, batch_size=1, shuffle=False)
 
-model_path = "../../model_epoch_2290.pwf"
+        model_path = "./model_epoch_2290.pwf"
 
-net = torch.load(model_path, map_location=torch.device('cpu'))
-if isinstance(net,torch.nn.DataParallel):
-		net = net.module
-net.eval().to("cpu")
+        net = torch.load(model_path, map_location=torch.device('cpu'))
+        if isinstance(net,torch.nn.DataParallel):
+                net = net.module
+        net.eval().to("cpu")
 
-
-test_model(net,
-           SEM_test_load, 2290, f"../../../Data/{dataset[0]}/Sequence_1_Preds/")
-
-# img, name = test_SEM(net, 
-#     SEM_test_load, f"../../../Data/{dataset[0]}/Sequence_1_Preds/")
-
-# plt.imshow(img)
-# plt.axis('off')
-# plt.title(name)
-# plt.show()
+        print(f"run on: ../../Data/{dataset}/{mask_folder}/")
+        test_model(net,
+                SEM_test_load, 2290, f"../../Data/{dataset}/{mask_folder}/")
