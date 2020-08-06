@@ -13,7 +13,7 @@ from PIL import Image
 import math
 
 import PhC
-import Flou
+import Fluo
 
 from cell import Cell, CellManager
 import argparse
@@ -21,8 +21,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Comp9517 Project')
 parser.add_argument('--DIC', nargs='?', default=False, const=True,
     help='Use DIC-C2DH-HeLa dataset')
-parser.add_argument('--Flou', nargs='?', default=False, const=True,
-    help='Use Flou-N2DL-HeLa dataset')
+parser.add_argument('--Fluo', nargs='?', default=False, const=True,
+    help='Use Fluo-N2DL-HeLa dataset')
 parser.add_argument('--PhC', nargs='?', default=False, const=True, 
     help='Use PhC-C2DL-HeLa dataset')
 
@@ -38,7 +38,7 @@ def run_PhC():
 
         for image_path in images:
             #image_path = "COMP9517 20T2 Group Project Image Sequences/PhC-C2DL-PSC/Sequence 1/t000.tif"
-            img = cv.imread(image_path)
+            img = cv.imread(image_path, cv.COLOR_BGR2GRAY)
 
             #processes images to segmented and thresholded cells
             #replace with better segmentation algorithm
@@ -58,7 +58,7 @@ def run_DIC():
 
         data = zip(images, masks)
         for image_path, mask_path in data:
-            img = cv.imread(image_path)
+            img = cv.imread(image_path, cv.COLOR_BGR2GRAY)
             mask = cv.imread(mask_path, cv.COLOR_BGR2GRAY)
 
             kernel = np.ones((10,10),np.uint8)
@@ -66,24 +66,28 @@ def run_DIC():
 
             manager.processImage(img, mask)
 
-def run_Flou():
+def run_Fluo():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
     for folder in sequences:
         images = [f for f in glob.glob(f"./Data/{datasets[1]}/{folder}/*")]
         images.sort()
 
         for image_path in images:
-            img = cv.imread(image_path)
+            img = cv.imread(image_path, cv.IMREAD_GRAYSCALE)
 
-            #TODO: preprocessing
+            show_image(img, "Original")
 
-            manager.processImage(img, img)
+            mask, img = Fluo.preprocess_image(img)
+
+            plot_two("Mask", img, "Original", mask, "Mask")
+
+            manager.processImage(img, mask)
 
 def on_click(event, x, y, p1, p2):
     if event == cv.EVENT_LBUTTONDOWN:
         manager.show_cell_details(x, y)
 
-datasets = ["DIC-C2DH-HeLa", "Flou-N2DL-HeLa", "PhC-C2DL-PSC"]
+datasets = ["DIC-C2DH-HeLa", "Fluo-N2DL-HeLa", "PhC-C2DL-PSC"]
 cv.namedWindow('Bounding Box')
 cv.setMouseCallback('Bounding Box', on_click)
 
@@ -92,11 +96,11 @@ i = 0
 
 if args.DIC:
     run_DIC()
-elif args.Flou:
-    run_Flou()
+elif args.Fluo:
+    run_Fluo()
 elif args.PhC:
     run_PhC()
 else:
     run_DIC()
-    run_Flou()
+    run_Fluo()
     run_PhC()

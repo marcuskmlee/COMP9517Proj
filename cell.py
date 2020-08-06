@@ -6,13 +6,10 @@ from scipy.spatial import distance
 from utilis import *
 
 from segment import *
-
-import PhC
-import Flou
 class Cell(object):
     def __init__(self, i, cnt):
         self.id = i
-        self.contours = cnt
+        self.cnt = cnt
         self.rect = cv.boundingRect(cnt)
         self.centre, _ = cv.minEnclosingCircle(cnt)
 
@@ -86,38 +83,34 @@ class CellManager(object):
                 count = count + 1
         return count
 
-    def processImage(self, img, mask):
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-
+    def hMaxima(self, gray, mask):
         maximaKernel = np.ones((5,5),np.uint8)
         maximaKernel[2,2] = 0
-        # opening = cv.morphologyEx(gray, cv.MORPH_OPEN, averaginKernel)
-        # intensityArray = FindIntensity(opening)
-        # # print(intensity)
-        # h = hMaxima(opening, intensityArray)
-
-        print(gray.shape)
-        print(mask.shape)
 
         gray = cv.GaussianBlur(gray, (5,5), 0)
         gray = cv.bitwise_and(gray, mask)
-        plot_two("Original vs hMaxima", img, "Original", gray, "h")
+        show_image(gray, "Remove background")
 
         maxima = cv.dilate(gray, maximaKernel, iterations = 5)
         maxima = cv.compare(gray, maxima, cv.CMP_GE)
-        plot_two("Original vs hMaxima", img, "maxima", maxima, "h")
+        plot_two("Find Maxima", gray, "Original", maxima, "Background subtracted")
 
         minima = cv.erode(gray, maximaKernel, iterations = 1)
         minima = cv.compare(gray, minima, cv.CMP_GT)
         maxima = cv.bitwise_and(maxima, minima)
         maxima = cv.GaussianBlur(maxima, (5,5), 0)
-        plot_two("Original vs minima", img, "Original", maxima, "h")
+
+        return maxima
+
+    def processImage(self, gray, mask):
+        nuclei = self.hMaxima(gray, mask)
+        plot_two("Original vs nuclei", gray, "Original", nuclei, "Nuclei segmented")
 
         #counts labelled cells, measures bounding boxes and stores in list
-        pred_count, sequence = self.count_cells(maxima)
+        pred_count, sequence = self.count_cells(mask, nuclei)
 
         self.sequence.append(sequence)
-        drawn = self.draw_bounding_box(img)
+        drawn = self.draw_bounding_box(gray)
         
         cv.imshow("Bounding Box", drawn)
         cv.waitKey(0)
@@ -220,14 +213,3 @@ class CellManager(object):
                 if (displacement+diffArea < minMatch[i][0]):
                     minMatch[i][0] = displacement+diffArea
                     minmatch[i][1] = j
-
-
-
-        
-
-
-
-
-
-
-    
