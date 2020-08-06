@@ -292,6 +292,8 @@ class CellManager(object):
 
     def matchCells(self,image):
         (h,w) = image.shape
+        if (self.currImage == 0):
+            return
         prevCells = self.sequence[self.currImage-1]
         currCells = self.sequence[self.currImage]
         numPrev = len(prevCells)
@@ -318,8 +320,8 @@ class CellManager(object):
         for i in range(numCurr):
             matches[i] = sortedMatrix[i][0][1]
 
-        print("matches:")
-        print(matches)
+        # print("matches:")
+        # print(matches)
         matches, success = checkMatches(matches, sortedMatrix)
         while not success:
             matches, success = checkMatches(matches, sortedMatrix)
