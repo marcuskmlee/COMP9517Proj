@@ -71,10 +71,11 @@ class Cell(object):
 
 class CellManager(object):
 
-    def __init__(self):
+    def __init__(self, demo=False):
         self.cells = []
         self.currImage = 0
         self.sequence = []
+        self.demo = demo
 
     def count_cell_divisions(self, cells):
         count = 0
@@ -89,11 +90,13 @@ class CellManager(object):
 
         gray = cv.GaussianBlur(gray, (5,5), 0)
         gray = cv.bitwise_and(gray, mask)
-        show_image(gray, "Remove background")
+        if self.demo:
+            show_image(gray, "Remove background")
 
         maxima = cv.dilate(gray, maximaKernel, iterations = 5)
         maxima = cv.compare(gray, maxima, cv.CMP_GE)
-        plot_two("Find Maxima", gray, "Original", maxima, "Background subtracted")
+        if self.demo:
+            plot_two("Find Maxima", gray, "Original", maxima, "Background subtracted")
 
         minima = cv.erode(gray, maximaKernel, iterations = 1)
         minima = cv.compare(gray, minima, cv.CMP_GT)
@@ -102,21 +105,26 @@ class CellManager(object):
 
         return maxima
 
-    def processImage(self, gray, mask):
+    def processImage(self, gray, mask, show=False):
         nuclei = self.hMaxima(gray, mask)
-        plot_two("Original vs nuclei", gray, "Original", nuclei, "Nuclei segmented")
+        if self.demo:
+            plot_two("Original vs nuclei", gray, "Original", nuclei, "Nuclei segmented")
 
         #counts labelled cells, measures bounding boxes and stores in list
         pred_count, sequence = self.count_cells(mask, nuclei)
 
         self.sequence.append(sequence)
         drawn = self.draw_bounding_box(gray)
-        
+
+        if show:
+            self.show(drawn)
+
+        self.currImage = self.currImage + 1
+
+    def show(self, drawn):
         cv.imshow("Bounding Box", drawn)
         cv.waitKey(0)
         cv.destroyAllWindows()
-
-        self.currImage = self.currImage + 1
 
     def in_image(self, image_no, cell_id):
         if (image_no < 0 or image_no >= len(self.sequence)):
@@ -134,21 +142,21 @@ class CellManager(object):
 
     def calculate_speed(self, cell_id):
         if self.in_image(self.currImage - 1, cell_id):
-            return distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(self.currImage, cell_id).get_centre())
+            return distance.euclidean(self.get_cell(i, cell_id).get_centre(), self.get_cell(self.currImage, cell_id).get_centre())
         return 0
 
     def calculate_total_distance(self, cell_id):
         total = 0
         for i in range(self.currImage - 1):
             if (in_image(i, cell_id)):
-                total = total + distance.euclidean(get_cell(i, cell_id).get_centre(), get_cell(i + 1, cell_id).get_centre())
+                total = total + distance.euclidean(self.get_cell(i, cell_id).get_centre(), self.get_cell(i + 1, cell_id).get_centre())
         return total
 
     def calculate_net_distance(self, cell_id):
         for i in range(self.currImage):
             if self.in_image(i, cell_id):
-                cell1 = get_cell(i, cell_id)
-                cell2 = get_cell(self.currImage, cell_id)
+                cell1 = self.get_cell(i, cell_id)
+                cell2 = self.get_cell(self.currImage, cell_id)
                 return distance.euclidean(cell1.get_centre(), cell2.get_centre())
         return 0
 
@@ -172,7 +180,7 @@ class CellManager(object):
         return Cell(_id, cnt)
 
     def count_cells(self, mask, nuclei):
-        _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        _, contours, _ = cv.findContours(nuclei, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         
         sequence = []
         for i, c in enumerate(contours):

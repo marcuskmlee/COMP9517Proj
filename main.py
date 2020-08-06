@@ -25,10 +25,12 @@ parser.add_argument('--Fluo', nargs='?', default=False, const=True,
     help='Use Fluo-N2DL-HeLa dataset')
 parser.add_argument('--PhC', nargs='?', default=False, const=True, 
     help='Use PhC-C2DL-HeLa dataset')
+parser.add_argument('--demo', nargs='?', default=False, const=True, 
+    help='Use PhC-C2DL-HeLa dataset')
 
 args = parser.parse_args()
 
-manager = CellManager()
+manager = CellManager(demo=args.demo)
 
 def run_PhC():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
@@ -43,8 +45,11 @@ def run_PhC():
             #processes images to segmented and thresholded cells
             #replace with better segmentation algorithm
             mask = PhC.preprocess(img)
-            plot_two("Mask", img, "Original", mask, "Mask")
-            manager.processImage(img, mask)
+            if args.demo:
+                plot_two("Mask", img, "Original", mask, "Mask")
+
+            show = images.index(image_path) == len(images)-1
+            manager.processImage(img, mask, show=show)
 
 def run_DIC():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
@@ -64,7 +69,8 @@ def run_DIC():
             kernel = np.ones((10,10),np.uint8)
             closing = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
 
-            manager.processImage(img, mask)
+            show = images.index(image_path) == len(images)-1
+            manager.processImage(img, mask, show=show)
 
 def run_Fluo():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
@@ -75,13 +81,16 @@ def run_Fluo():
         for image_path in images:
             img = cv.imread(image_path, cv.IMREAD_GRAYSCALE)
 
-            show_image(img, "Original")
+            if args.demo:
+                show_image(img, "Original")
 
             mask, img = Fluo.preprocess_image(img)
 
-            plot_two("Mask", img, "Original", mask, "Mask")
+            if args.demo:
+                plot_two("Mask", img, "Original", mask, "Mask")
 
-            manager.processImage(img, mask)
+            show = images.index(image_path) == len(images)-1
+            manager.processImage(img, mask, show=show)
 
 def on_click(event, x, y, p1, p2):
     if event == cv.EVENT_LBUTTONDOWN:

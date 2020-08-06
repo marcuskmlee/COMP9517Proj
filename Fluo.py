@@ -20,7 +20,7 @@ def preprocess_image(img):
     img, minVal, maxVal = stretch(img)
     mask = otsuThreshold(img, maxVal, maxVal)
 
-    print(f"minVal: {minVal}, maxVal: {maxVal}, difference: {maxVal - minVal}")
+    # print(f"minVal: {minVal}, maxVal: {maxVal}, difference: {maxVal - minVal}")
 
     return mask, img
 
