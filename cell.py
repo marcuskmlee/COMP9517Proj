@@ -171,7 +171,7 @@ class CellManager(object):
         self.cells.append(Cell(_id, cnt))
         return Cell(_id, cnt)
 
-    def count_cells(self, mask):
+    def count_cells(self, mask, nuclei):
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         
         sequence = []
