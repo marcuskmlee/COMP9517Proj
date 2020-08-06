@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import math
 
 from scipy.spatial import distance
 
@@ -23,7 +24,7 @@ class Cell(object):
         self.matched = False
         self.inFrame = True
 
-        self.area = cv.contourArea(self.cnt)
+        self.area = cv.contourArea(self.contours)
 
     def __str__(self):
         return "Cell id: " + str(self.id) + " x range: " + str(self.x) + "-" + str(self.w) + " y range: " + str(self.y) + "-" + str(self.h)
@@ -117,6 +118,7 @@ class CellManager(object):
         pred_count, sequence = self.count_cells(maxima)
 
         self.sequence.append(sequence)
+        self.matchCells(img)
         drawn = self.draw_bounding_box(img)
         
         cv.imshow("Bounding Box", drawn)
@@ -205,21 +207,57 @@ class CellManager(object):
         return drawn
 
     def matchCells(self,image):
-        (h,w) = image.shape
-        prevCells = sequence[self.currImage-1]
-        currCells = sequence[self.currImage]
+        (h,w,d) = image.shape
+        prevCells = self.sequence[self.currImage-1]
+        currCells = self.sequence[self.currImage]
         numPrev = len(prevCells)
         numCurr = len(currCells)
-        matchingMatrix = np.full((numCurr,numPrev),100)
-        minMatch = np.full((numCurr,2),100)
+        matchingMatrix = np.full((numCurr,numPrev,2),100)
+        # minMatch = np.full((numCurr,2),100)
         for i in range(numCurr):
             for j in range(numPrev):
-                displacement = displacement(h,w,currCells[i].center, prevCells[j].center)
-                diffArea = currCells[i].area - prevCells[j].area
-                matchingMatrix[i][j] = displacement+diffArea
-                if (displacement+diffArea < minMatch[i][0]):
-                    minMatch[i][0] = displacement+diffArea
-                    minmatch[i][1] = j
+                displace = displacement(h,w,currCells[i].centre, prevCells[j].centre)
+                diffArea = abs(currCells[i].area - prevCells[j].area)
+                matchingMatrix[i][j][0] = displace+diffArea
+                matchingMatrix[i][j][1] = j
+                # if (displacement+diffArea < minMatch[i][0]):
+                #     minMatch[i][0] = displacement+diffArea
+                #     minmatch[i][1] = j
+        # print("Matching Matrix Pre-Sort")
+        # print(matchingMatrix)
+        # matchingMatrix.sort(axis = 1)
+        # print ((matchingMatrix[0]))
+        # print("Matching Matrix Post-Sort")
+        # print(matchingMatrix)
+        # for i in range(numCurr):
+        #     for j in range(numPrev):
+        #         if (onlyMatch(matchingMatrix, matchingMatrix[i][j][1])):
+        #             sequence[i].set_id(sequence[])
+        sortedMatrix = np.zeros((numCurr,numPrev,2))
+        for i in range(numCurr):
+            sortedMatrix[i] = quicksortMatrix(matchingMatrix[i])
+
+        print("Original")
+        print(matchingMatrix)
+        print("Sorted")
+        print(sortedMatrix)
+
+        matches = np.zeros(numCurr)
+        for i in range(numCurr):
+            matches[i] = sortedMatrix[i][0][1]
+
+        print("matches:")
+        print(matches)
+        matches, success = checkMatches(matches, sortedMatrix)
+        while not success:
+            matches, success = checkMatches(matches, sortedMatrix)
+
+        for i in range(numCurr):
+            if (matches[i] != -1):
+                self.sequence[self.currImage][i].set_id(self.sequence[self.currImage][int(matches[i])].get_id())
+
+
+
 
 
 

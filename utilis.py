@@ -5,6 +5,8 @@ from skimage.future import graph
 from sklearn.cluster import MeanShift, estimate_bandwidth
 from skimage import color
 import os
+import math
+from random import randint
 
 colors = {
     "red"   : (255,0, 0),
@@ -333,3 +335,48 @@ def nFoldDilation(image,h):
         # cv.imshow("dilate loop"+str(n),dilated)
         n+=1
     return dilated
+
+def checkMatches(matches,matchMatrix):
+    Pass = True
+    for i in range(len(matches)):
+        for j in range(i+1,len(matches)):
+            if (matches[i] == matches[j] and matches[i] != -1):
+                Pass = False
+                # print("match i = "+str(matches[i]))
+                # print("match j = "+str(matches[j])) 
+                if (matchMatrix[i][int(matches[i])][0] > matchMatrix[j][int(matches[j])][0]):
+                    temp = matches[i]
+                    if temp+1 == len(matchMatrix[i]):
+                        matches[i] = -1
+                    else:
+                        matches[i] = matchMatrix[i][int(temp+1)][1]
+                else:
+                    temp = matches[j]
+                    if temp+1 == len(matchMatrix[j]):
+                        matches[j] = -1
+                    else:
+                        
+                        matches[j] = matchMatrix[j][int(temp+1)][1]
+
+    return matches, Pass
+
+def quicksortMatrix(matchArray):
+    if (len(matchArray)<2):
+        return matchArray
+    low = []
+    same = []
+    high = []
+
+    pivot = matchArray[randint(0,len(matchArray)-1)][0]
+
+    for matchScore in matchArray:
+        if matchScore[0] < pivot:
+            low.append(matchScore)
+        elif matchScore[0] == pivot:
+            same.append(matchScore)
+        elif matchScore[0]> pivot:
+            high.append(matchScore)
+
+    return quicksortMatrix(low) + same + quicksortMatrix(high)
+
+
