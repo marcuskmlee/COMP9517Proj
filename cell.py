@@ -27,7 +27,7 @@ class Cell(object):
         self.matched = False
         self.inFrame = True
 
-        self.area = cv.contourArea(self.contours)
+        self.area = cv.contourArea(self.cnt)
 
     def __str__(self):
         return "Cell id: " + str(self.id) + " x range: " + str(self.x) + "-" + str(self.w) + " y range: " + str(self.y) + "-" + str(self.h)
@@ -139,8 +139,9 @@ class CellManager(object):
         pred_count, sequence = self.count_cells(mask, nuclei)
 
         self.sequence.append(sequence)
-        self.matchCells(img)
-        drawn = self.draw_bounding_box(img)
+        self.matchCells(gray)
+        color = cv.cvtColor(gray,cv.COLOR_GRAY2BGR)
+        drawn = self.draw_bounding_box(color)
         
         if show:
             self.show(drawn)
@@ -232,7 +233,7 @@ class CellManager(object):
         return drawn
 
     def matchCells(self,image):
-        (h,w,d) = image.shape
+        (h,w) = image.shape
         prevCells = self.sequence[self.currImage-1]
         currCells = self.sequence[self.currImage]
         numPrev = len(prevCells)
