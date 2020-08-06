@@ -7,6 +7,11 @@ from skimage.measure import label
 from skimage import data
 from skimage import color
 from skimage.morphology import extrema
+from skimage.segmentation import clear_border
+from skimage.filters import threshold_otsu
+from skimage.segmentation import clear_border
+from skimage.measure import label, regionprops
+from skimage.morphology import closing, square
 from skimage import exposure
 
 from utilis import *
@@ -17,7 +22,7 @@ class Cell(object):
         self.id = i
         self.cnt = cnt
         self.rect = cv.boundingRect(cnt)
-        self.centre, _ = cv.minEnclosingCircle(cnt)
+        self.centre, self.radius = cv.minEnclosingCircle(cnt)
 
         self.x_velocity = 0
         self.y_velocity = 0
@@ -47,6 +52,9 @@ class Cell(object):
     def get_centre(self):
         x, y = self.centre
         return (int(x), int(y))
+    
+    def get_radius(self):
+        return self.radius
 
     def get_id(self):
         return self.id
@@ -77,11 +85,21 @@ class Cell(object):
 
 class CellManager(object):
 
-    def __init__(self, demo=False):
+    def __init__(self, dataset, demo=False):
         self.cells = []
         self.currImage = 0
         self.sequence = []
         self.demo = demo
+        self.blurSize = 0
+        self.h = 5
+        self.image = []
+
+        if dataset == "PhC":
+            self.h = 16
+            self.blurSize = 7
+        elif dataset == "Fluo":
+            self.h = 10
+            self.blurSize = 19
 
     def count_cell_divisions(self, cells):
         count = 0
@@ -109,7 +127,8 @@ class CellManager(object):
         # maxima = cv.bitwise_and(maxima, minima)
         # maxima = cv.GaussianBlur(maxima, (5,5), 0)
 
-        img = cv.GaussianBlur(img, (5,5), 0)
+        size = (self.blurSize, self.blurSize)
+        img = cv.GaussianBlur(img, size, 0)
         img = cv.bitwise_and(img, mask)
 
         local_maxima = extrema.local_maxima(img, connectivity=5)
@@ -117,8 +136,7 @@ class CellManager(object):
         overlay = color.label2rgb(label_maxima, img, alpha=0.7, bg_label=0,
                                 bg_color=None, colors=[(1, 0, 0)])
 
-        h = 10
-        h_maxima = extrema.h_maxima(img, h)
+        h_maxima = extrema.h_maxima(img, self.h)
         label_h_maxima = label(h_maxima)
         overlay_h = color.label2rgb(label_h_maxima, img, alpha=0.7, bg_label=0,
                                     bg_color=None, colors=[(1, 0, 0)])
@@ -131,6 +149,10 @@ class CellManager(object):
 
     def processImage(self, gray, mask, show=False):
         nuclei = self.hMaxima(gray, mask)
+        self.image = gray
+
+        mask = clear_border(mask)
+
         if self.demo:
             plot_two("Original vs nuclei", gray, "Original", nuclei, "Nuclei segmented")
 
@@ -140,9 +162,10 @@ class CellManager(object):
         self.sequence.append(sequence)
         drawn = self.draw_bounding_box(gray)
 
-        if show:
-            self.show(drawn)
+        # if show:
+        self.show(drawn)
 
+        print(f"Processed image: {self.currImage}")
         self.currImage = self.currImage + 1
 
     def show(self, drawn):
@@ -166,7 +189,7 @@ class CellManager(object):
 
     def calculate_speed(self, cell_id):
         if self.in_image(self.currImage - 1, cell_id):
-            return distance.euclidean(self.get_cell(i, cell_id).get_centre(), self.get_cell(self.currImage, cell_id).get_centre())
+            return distance.euclidean(self.get_cell(self.currImage-1, cell_id).get_centre(), self.get_cell(self.currImage, cell_id).get_centre())
         return 0
 
     def calculate_total_distance(self, cell_id):
@@ -204,16 +227,50 @@ class CellManager(object):
         return Cell(_id, cnt)
 
     def count_cells(self, mask, nuclei):
-        _, contours, _ = cv.findContours(nuclei, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
         
         sequence = []
         for i, c in enumerate(contours):
+            rect = cv.boundingRect(c)
+            x, y, w, h = rect
+
+            # drawn = self.image.copy()
+            # colour = (255, 0, 0)
+            # cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
+            # plot_two("zoom", drawn, "contour", drawn[y:y+h, x:x+w], "zoom")
+
+            if self.count_peaks(nuclei[y:y+h, x:x+w]) > 1:
+                expanded = expand_labels(nuclei, distance=self.average_radius())
+
+                poly = np.array(rect, dtype=np.int32)
+                img = np.zeros((800, 800), np.int8)
+                cv2.fillPoly(img, poly, 255)
+                imshow(img, cmap="gray")
+
+                drawn = self.image.copy()
+                colour = (255, 0, 0)
+                cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
+                show_image(drawn, "cluster")
+
             cell = self.add_cell(i, c)
             sequence.append(cell)
 
         colour = (0, 255, 0)
         
         return len(contours), sequence
+
+    def count_peaks(self, mask):
+        _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+        return len(contours)
+
+    def average_radius(self, i):
+        i = self.currImage
+        avg = 0
+        for cell in self.sequence[i]:
+            avg += cell.get_radius()
+
+        return int(avg/len(sequence[i]))
 
     def draw_bounding_box(self,image):
         drawn = image.copy()
