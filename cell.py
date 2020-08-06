@@ -10,10 +10,10 @@ from skimage import color
 from skimage.morphology import extrema
 from skimage.segmentation import clear_border
 from skimage.filters import threshold_otsu
-from skimage.segmentation import clear_border
 from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage import exposure
+import skimage.color
 
 from utilis import *
 
@@ -87,7 +87,6 @@ class Cell(object):
 class CellManager(object):
 
     def __init__(self, dataset, demo=False):
-        self.cells = []
         self.currImage = 0
         self.sequence = []
         self.demo = demo
@@ -226,10 +225,6 @@ class CellManager(object):
                     confinement = (total_distance / net_distance)
                 print("Confinement Ratio: " + str(confinement))
 
-    def add_cell(self, _id, cnt):
-        self.cells.append(Cell(_id, cnt))
-        return Cell(_id, cnt)
-
     def count_cells(self, mask, nuclei):
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
@@ -238,25 +233,35 @@ class CellManager(object):
             rect = cv.boundingRect(c)
             x, y, w, h = rect
 
+            # print(rect)
+
             # drawn = self.image.copy()
             # colour = (255, 0, 0)
             # cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
             # plot_two("zoom", drawn, "contour", drawn[y:y+h, x:x+w], "zoom")
 
             if self.count_peaks(nuclei[y:y+h, x:x+w]) > 1:
-                expanded = expand_labels(nuclei, distance=self.average_radius())
-
-                poly = np.array(rect, dtype=np.int32)
-                img = np.zeros((800, 800), np.int8)
-                cv2.fillPoly(img, poly, 255)
-                imshow(img, cmap="gray")
-
                 drawn = self.image.copy()
                 colour = (255, 0, 0)
                 cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
-                show_image(drawn, "cluster")
+                # show_image(drawn, "cluster")
 
-            cell = self.add_cell(i, c)
+                rect = [[x, y], [x+w, y], [x+w, y+h], [x, y+h]]
+                poly = np.array([rect], dtype=np.int32)
+                clusterMask = np.zeros(mask.shape, dtype=np.uint8)
+                cv.fillPoly(clusterMask, poly, 255)
+                # plot_two("Drawn", self.image, "Image", clusterMask, "Cluster")
+                drawn = cv.bitwise_and(nuclei, clusterMask)
+
+                _, nContours, _ = cv.findContours(nuclei, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+                for cnt in nContours:
+                    cell = Cell(i, cnt)
+                    sequence.append(cell)
+
+                # expanded = expand_labels(nuclei, distance=self.average_radius())
+                # plot_two("Drawn", nuclei, "Image", expanded, "Cluster")
+
+            cell = Cell(i, c)
             sequence.append(cell)
 
         colour = (0, 255, 0)
@@ -294,6 +299,7 @@ class CellManager(object):
         (h,w) = image.shape
         if (self.currImage == 0):
             return
+
         prevCells = self.sequence[self.currImage-1]
         currCells = self.sequence[self.currImage]
         numPrev = len(prevCells)
