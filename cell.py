@@ -86,20 +86,13 @@ class Cell(object):
 
 class CellManager(object):
 
-    def __init__(self, dataset, demo=False, dataset):
+    def __init__(self,demo=False):
         self.currImage = 0
         self.sequence = []
         self.demo = demo
         self.blurSize = 5
         self.h = 5
         self.image = []
-
-        if dataset == "PhC":
-            self.h = 16
-            self.blurSize = 7
-        elif dataset == "Fluo":
-            self.h = 10
-            self.blurSize = 19
 
     def dataset(self, dataset):
         if dataset == "PhC":
@@ -172,7 +165,6 @@ class CellManager(object):
         color = cv.cvtColor(gray,cv.COLOR_GRAY2BGR)
         drawn = self.draw_bounding_box(color)
         
-
         if True:
             self.show(drawn)
 
