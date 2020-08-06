@@ -3,6 +3,12 @@ import numpy as np
 
 from scipy.spatial import distance
 
+from skimage.measure import label
+from skimage import data
+from skimage import color
+from skimage.morphology import extrema
+from skimage import exposure
+
 from utilis import *
 
 from segment import *
@@ -84,26 +90,44 @@ class CellManager(object):
                 count = count + 1
         return count
 
-    def hMaxima(self, gray, mask):
-        maximaKernel = np.ones((5,5),np.uint8)
-        maximaKernel[2,2] = 0
+    def hMaxima(self, img, mask):
+        # maximaKernel = np.ones((5,5),np.uint8)
+        # maximaKernel[2,2] = 0
 
-        gray = cv.GaussianBlur(gray, (5,5), 0)
-        gray = cv.bitwise_and(gray, mask)
+        # gray = cv.GaussianBlur(gray, (5,5), 0)
+        # gray = cv.bitwise_and(gray, mask)
+        # if self.demo:
+        #     show_image(gray, "Remove background")
+
+        # maxima = cv.dilate(gray, maximaKernel, iterations = 5)
+        # maxima = cv.compare(gray, maxima, cv.CMP_GE)
+        # if self.demo:
+        #     plot_two("Find Maxima", gray, "Original", maxima, "Background subtracted")
+
+        # minima = cv.erode(gray, maximaKernel, iterations = 1)
+        # minima = cv.compare(gray, minima, cv.CMP_GT)
+        # maxima = cv.bitwise_and(maxima, minima)
+        # maxima = cv.GaussianBlur(maxima, (5,5), 0)
+
+        img = cv.GaussianBlur(img, (5,5), 0)
+        img = cv.bitwise_and(img, mask)
+
+        local_maxima = extrema.local_maxima(img, connectivity=5)
+        label_maxima = label(local_maxima)
+        overlay = color.label2rgb(label_maxima, img, alpha=0.7, bg_label=0,
+                                bg_color=None, colors=[(1, 0, 0)])
+
+        h = 10
+        h_maxima = extrema.h_maxima(img, h)
+        label_h_maxima = label(h_maxima)
+        overlay_h = color.label2rgb(label_h_maxima, img, alpha=0.7, bg_label=0,
+                                    bg_color=None, colors=[(1, 0, 0)])
+
+        # show_image(overlay, "local")
         if self.demo:
-            show_image(gray, "Remove background")
+            show_image(overlay_h, "regional")
 
-        maxima = cv.dilate(gray, maximaKernel, iterations = 5)
-        maxima = cv.compare(gray, maxima, cv.CMP_GE)
-        if self.demo:
-            plot_two("Find Maxima", gray, "Original", maxima, "Background subtracted")
-
-        minima = cv.erode(gray, maximaKernel, iterations = 1)
-        minima = cv.compare(gray, minima, cv.CMP_GT)
-        maxima = cv.bitwise_and(maxima, minima)
-        maxima = cv.GaussianBlur(maxima, (5,5), 0)
-
-        return maxima
+        return h_maxima
 
     def processImage(self, gray, mask, show=False):
         nuclei = self.hMaxima(gray, mask)

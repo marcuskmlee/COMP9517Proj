@@ -1,11 +1,23 @@
 import imutils
-import cv2
+import cv2 as cv
 import numpy as np
 import argparse
 from utilis import plot_two
 
+from skimage.measure import label
+from skimage import data
+from skimage import color
+from skimage.morphology import extrema
+from skimage import exposure
+
+import matplotlib.pyplot as plt
+
+import PhC
+
+from utilis import show_image
+
 def SegmentNuclei(image, N):
-	blur = cv2.GaussianBlur(image,(N,N))
+	blur = cv.GaussianBlur(image,(N,N))
 
 def ContrastStretching(image):
 	(h, w) = image.shape
@@ -20,9 +32,9 @@ def ContrastStretching(image):
 			value = (temp-minVal)*(255/(maxVal-minVal))
 			image[row][col] = value
 
-	# cv2.imshow("Image", image)
+	# cv.imshow("Image", image)
 	# print(maxVal)
-	# cv2.waitKey(0)
+	# cv.waitKey(0)
 	return image
 
 def hMaxima(image, intensityArray):
@@ -69,8 +81,8 @@ def maxNeighbourhood(N,image,x,y):
 	if right > w:
 		right = w
 	neighbourhood = image[int(top):int(bottom), int(left):int(right)]
-	# cv2.imshow("neigh", neighbourhood)
-	# cv2.waitKey(0)
+	# cv.imshow("neigh", neighbourhood)
+	# cv.waitKey(0)
 	return neighbourhood.max()
 
 def minNeighbourhood(N,image,x,y):
@@ -89,8 +101,8 @@ def minNeighbourhood(N,image,x,y):
 	if right > w:
 		right = w
 	neighbourhood = image[int(top):int(bottom), int(left):int(right)]
-	# cv2.imshow("neigh", neighbourhood)
-	# cv2.waitKey(0)
+	# cv.imshow("neigh", neighbourhood)
+	# cv.waitKey(0)
 	return neighbourhood.min()
 
 def MinMaxFilter(image, N, M):
@@ -109,7 +121,7 @@ def MinMaxFilter(image, N, M):
 				B[x][y] = minNeighbourhood(N,A,x,y)
 
 		#Invert the colours so that the image comes out with a white background similar to the original
-		O = ~(cv2.subtract(B,I))
+		O = ~(cv.subtract(B,I))
 
 	elif M == 1:
 		#If m == 1 then we perform min-filtering, then max-filtering
@@ -121,7 +133,7 @@ def MinMaxFilter(image, N, M):
 			for y in range(0,w):
 				B[x][y] = maxNeighbourhood(N,A,x,y)
 
-		O = (cv2.subtract(I,B))
+		O = (cv.subtract(I,B))
 
 	return O
 
@@ -133,13 +145,48 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	filename = args.file[0]
 
-	I = cv2.imread(filename,cv2.IMREAD_GRAYSCALE)
+	img = cv.imread(filename, cv.IMREAD_GRAYSCALE)
+	mask = PhC.preprocess(img)
 
-	CS = ContrastStretching(I)
-	minmax = MinMaxFilter(CS, 20, 1)
-	intensityArray = FindIntensity(minmax)
-	# print(intensity)
-	h = hMaxima(minmax, intensityArray)
+	img = cv.GaussianBlur(img, (5,5), 0)
+	img = cv.bitwise_and(img, mask)
 
-	print(h)
+	local_maxima = extrema.local_maxima(img)
+	label_maxima = label(local_maxima)
+	overlay = color.label2rgb(label_maxima, img, alpha=0.7, bg_label=0,
+							bg_color=None, colors=[(1, 0, 0)])
+
+	h = 16
+	h_maxima = extrema.h_maxima(img, h)
+	label_h_maxima = label(h_maxima)
+	overlay_h = color.label2rgb(label_h_maxima, img, alpha=0.7, bg_label=0,
+								bg_color=None, colors=[(1, 0, 0)])
+
+	show_image(overlay, "local")
+	show_image(overlay_h, "regional")
+
+	# fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+
+	# ax[0].imshow(img, cmap='gray')
+	# ax[0].set_title('Original image')
+	# ax[0].axis('off')
+
+	# ax[1].imshow(overlay)
+	# ax[1].set_title('Local Maxima')
+	# ax[1].axis('off')
+
+	# ax[2].imshow(overlay_h)
+	# ax[2].set_title('h maxima for h = %.2f' % h)
+	# ax[2].axis('off')
+	# plt.show()
+
+	# CS = ContrastStretching(I)
+	# minmax = MinMaxFilter(CS, 20, 1)
+	# intensityArray = FindIntensity(minmax)
+	# # print(intensity)
+	# h = hMaxima(minmax, intensityArray)
+
+	# print(h)
+
+
 	# plot_two("H Maxima", I, "Original", minmax, "MinMaxed")
