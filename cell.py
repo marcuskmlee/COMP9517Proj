@@ -169,7 +169,9 @@ class CellManager(object):
 
         self.sequence.append(sequence)
         self.matchCells(gray)
-        drawn = self.draw_bounding_box(gray)
+        color = cv.cvtColor(gray,cv.COLOR_GRAY2BGR)
+        drawn = self.draw_bounding_box(color)
+        
 
         if True:
             self.show(drawn)
@@ -302,6 +304,8 @@ class CellManager(object):
         return drawn
 
     def matchCells(self,image):
+        print(self.currImage)
+        print (self.sequence)
         if self.currImage == 0:
             return
         
@@ -318,31 +322,19 @@ class CellManager(object):
                 diffArea = abs(currCells[i].area - prevCells[j].area)
                 matchingMatrix[i][j][0] = displace+diffArea
                 matchingMatrix[i][j][1] = j
-                # if (displacement+diffArea < minMatch[i][0]):
-                #     minMatch[i][0] = displacement+diffArea
-                #     minmatch[i][1] = j
-        # print("Matching Matrix Pre-Sort")
-        # print(matchingMatrix)
-        # matchingMatrix.sort(axis = 1)
-        # print ((matchingMatrix[0]))
-        # print("Matching Matrix Post-Sort")
-        # print(matchingMatrix)
-        # for i in range(numCurr):
-        #     for j in range(numPrev):
-        #         if (onlyMatch(matchingMatrix, matchingMatrix[i][j][1])):
-        #             sequence[i].set_id(sequence[])
+
         sortedMatrix = np.zeros((numCurr,numPrev,2))
         for i in range(numCurr):
             sortedMatrix[i] = quicksortMatrix(matchingMatrix[i])
 
-        # print("Original")
-        # print(matchingMatrix)
-        # print("Sorted")
-        # print(sortedMatrix)
+        print("Original")
+        print(matchingMatrix)
+        print("Sorted")
+        print(sortedMatrix)
 
         matches = np.zeros(numCurr)
         for i in range(numCurr):
-            matches[i] = sortedMatrix[i][0][1]
+            matches[i] = sortedMatrix[i][0]
 
         # print("matches:")
         # print(matches)
