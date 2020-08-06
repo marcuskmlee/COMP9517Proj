@@ -139,20 +139,15 @@ class CellManager(object):
         pred_count, sequence = self.count_cells(mask, nuclei)
 
         self.sequence.append(sequence)
-<<<<<<< HEAD
         self.matchCells(img)
         drawn = self.draw_bounding_box(img)
         
-=======
-        drawn = self.draw_bounding_box(gray)
-
         if show:
             self.show(drawn)
 
         self.currImage = self.currImage + 1
 
     def show(self, drawn):
->>>>>>> 868b574065caae63a7a1eedc8fd9d8fdc942297d
         cv.imshow("Bounding Box", drawn)
         cv.waitKey(0)
         cv.destroyAllWindows()
