@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import math
 
 from scipy.spatial import distance
 
@@ -31,7 +32,7 @@ class Cell(object):
         self.matched = False
         self.inFrame = True
 
-        self.area = cv.contourArea(self.cnt)
+        self.area = cv.contourArea(self.contours)
 
     def __str__(self):
         return "Cell id: " + str(self.id) + " x range: " + str(self.x) + "-" + str(self.w) + " y range: " + str(self.y) + "-" + str(self.h)
@@ -48,11 +49,11 @@ class Cell(object):
 
     def get_matched(self):
         return self.matched
-    
+
     def get_centre(self):
         x, y = self.centre
         return (int(x), int(y))
-    
+
     def get_radius(self):
         return self.radius
 
@@ -67,7 +68,7 @@ class Cell(object):
 
     def get_y_velocity(self):
         return self.y_velocity
-    
+
     def set_id(self, new_id):
         self.id = new_id
 
@@ -160,10 +161,11 @@ class CellManager(object):
         pred_count, sequence = self.count_cells(mask, nuclei)
 
         self.sequence.append(sequence)
-        drawn = self.draw_bounding_box(gray)
+        self.matchCells(img)
+        drawn = self.draw_bounding_box(img)
 
-        # if show:
-        self.show(drawn)
+        if show:
+            self.show(drawn)
 
         print(f"Processed image: {self.currImage}")
         self.currImage = self.currImage + 1
@@ -228,7 +230,7 @@ class CellManager(object):
 
     def count_cells(self, mask, nuclei):
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-        
+
         sequence = []
         for i, c in enumerate(contours):
             rect = cv.boundingRect(c)
@@ -256,7 +258,7 @@ class CellManager(object):
             sequence.append(cell)
 
         colour = (0, 255, 0)
-        
+
         return len(contours), sequence
 
     def count_peaks(self, mask):
@@ -279,26 +281,59 @@ class CellManager(object):
             colour = (0, 255, 0)
             if cell.is_dividing():
                 colour = (0, 0, 255)
-            
+
             x, y, w, h = cell.get_rect()
             cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
             cv.circle(drawn, cell.get_centre(), 1, colour, 2)
-        
+
         return drawn
 
     def matchCells(self,image):
-        (h,w) = image.shape
-        prevCells = sequence[self.currImage-1]
-        currCells = sequence[self.currImage]
+        (h,w,d) = image.shape
+        prevCells = self.sequence[self.currImage-1]
+        currCells = self.sequence[self.currImage]
         numPrev = len(prevCells)
         numCurr = len(currCells)
-        matchingMatrix = np.full((numCurr,numPrev),100)
-        minMatch = np.full((numCurr,2),100)
+        matchingMatrix = np.full((numCurr,numPrev,2),100)
+        # minMatch = np.full((numCurr,2),100)
         for i in range(numCurr):
             for j in range(numPrev):
-                displacement = displacement(h,w,currCells[i].center, prevCells[j].center)
-                diffArea = currCells[i].area - prevCells[j].area
-                matchingMatrix[i][j] = displacement+diffArea
-                if (displacement+diffArea < minMatch[i][0]):
-                    minMatch[i][0] = displacement+diffArea
-                    minmatch[i][1] = j
+                displace = displacement(h,w,currCells[i].centre, prevCells[j].centre)
+                diffArea = abs(currCells[i].area - prevCells[j].area)
+                matchingMatrix[i][j][0] = displace+diffArea
+                matchingMatrix[i][j][1] = j
+                # if (displacement+diffArea < minMatch[i][0]):
+                #     minMatch[i][0] = displacement+diffArea
+                #     minmatch[i][1] = j
+        # print("Matching Matrix Pre-Sort")
+        # print(matchingMatrix)
+        # matchingMatrix.sort(axis = 1)
+        # print ((matchingMatrix[0]))
+        # print("Matching Matrix Post-Sort")
+        # print(matchingMatrix)
+        # for i in range(numCurr):
+        #     for j in range(numPrev):
+        #         if (onlyMatch(matchingMatrix, matchingMatrix[i][j][1])):
+        #             sequence[i].set_id(sequence[])
+        sortedMatrix = np.zeros((numCurr,numPrev,2))
+        for i in range(numCurr):
+            sortedMatrix[i] = quicksortMatrix(matchingMatrix[i])
+
+        print("Original")
+        print(matchingMatrix)
+        print("Sorted")
+        print(sortedMatrix)
+
+        matches = np.zeros(numCurr)
+        for i in range(numCurr):
+            matches[i] = sortedMatrix[i][0][1]
+
+        print("matches:")
+        print(matches)
+        matches, success = checkMatches(matches, sortedMatrix)
+        while not success:
+            matches, success = checkMatches(matches, sortedMatrix)
+
+        for i in range(numCurr):
+            if (matches[i] != -1):
+                self.sequence[self.currImage][i].set_id(self.sequence[self.currImage][int(matches[i])].get_id())
