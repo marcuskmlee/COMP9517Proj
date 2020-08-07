@@ -161,10 +161,10 @@ class CellManager(object):
             # print(f"hMaxima: {overlay_h.dtype}")
 
         if self.dataset == "DIC":
-            show_image(overlay, "regional")
-            cv.imwrite("./report/DIC/hmaxima.png", overlay.astype(np.uint8))
-            exit(1)
-            return local_maxima
+            # show_image(overlay, "regional")
+            # cv.imwrite("./report/DIC/hmaxima.png", overlay.astype(np.uint8))
+            # exit(1)
+            return local_maxima.astype(np.uint8)
 
         return h_maxima
 
@@ -190,9 +190,9 @@ class CellManager(object):
         color = cv.cvtColor(gray, cv.COLOR_GRAY2BGR)
         drawn = self.draw_bounding_box(color)
         
-        # if True:
-        #     self.show(drawn)
-        #     cv.imwrite("./report/Fluo/bounding_boxes.png", drawn)
+        if True:
+            cv.imwrite("./report/DIC/bounding_boxes.png", drawn)
+            self.show(drawn)
 
         print(f"Processed image: {self.currImage} with {pred_count} cells")
         self.currImage = self.currImage + 1
@@ -376,14 +376,17 @@ class CellManager(object):
         for i in range(numCurr):
             for j in range(numPrev):
                 displace = displacement(h,w,currCells[i].centre, prevCells[j].centre)
+                print(100*displace)
                 # diffArea = abs(currCells[i].area - prevCells[j].area)
-                matchingMatrix[i][j][0] = displace
+                matchingMatrix[i][j][0] = 100* displace
                 matchingMatrix[i][j][1] = j
 
-        sortedMatrix = np.zeros((numCurr,numPrev,2))
-
+        print(f"numCurr: {numCurr}, numPrev: {numPrev}")
         print("Matching Matrix:")
+        # print(matchingMatrix)
         printMatchMatrix(matchingMatrix, numCurr, numPrev)
+
+        sortedMatrix = np.zeros((numCurr,numPrev,2))
 
         for i in range(numCurr):
             sortedMatrix[i] = quicksortMatrix(matchingMatrix[i])
@@ -409,8 +412,8 @@ class CellManager(object):
             prev = self.sequence[self.currImage-1][int(matches[i])]
             cell = self.sequence[self.currImage][i]
 
-            if matchingMatrix[i][int(matches[i])][0] > 0.2:
-                print("rejected")
+            if matchingMatrix[i][int(matches[i])][0] < 0.2:
+                # print("rejected")
                 matches[i] = -1
 
             if (matches[i] != -1):
