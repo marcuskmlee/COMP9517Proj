@@ -347,14 +347,21 @@ class CellManager(object):
         currCells = self.sequence[self.currImage]
         numPrev = len(prevCells)
         numCurr = len(currCells)
-        matchingMatrix = np.full((numCurr,numPrev,2),100)
+        matchingMatrix = np.full((numCurr,numPrev,2),100, dtype=float)
         # minMatch = np.full((numCurr,2),100)
         for i in range(numCurr):
             for j in range(numPrev):
                 displace = displacement(h,w,currCells[i].centre, prevCells[j].centre)
                 # diffArea = abs(currCells[i].area - prevCells[j].area)
                 matchingMatrix[i][j][0] = displace
+                # print(displace)
+                # print("matchingmatrix["+str(i)+"]["+str(j)+"]="+str(matchingMatrix[i][j][0]))
                 matchingMatrix[i][j][1] = j
+
+
+        # print("Matching Matrix:")
+        # print(matchingMatrix)
+        # printMatchMatrix(matchingMatrix, numCurr, numPrev)
 
         sortedMatrix = np.zeros((numCurr,numPrev,2))
 
