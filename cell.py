@@ -14,6 +14,7 @@ from skimage.measure import label, regionprops
 from skimage.morphology import closing, square
 from skimage import exposure
 import skimage.color
+from skimage.io import imsave
 
 from utilis import *
 
@@ -72,6 +73,9 @@ class Cell(object):
     def set_id(self, new_id):
         self.id = new_id
 
+    def get_area(self):
+        return self.area
+
     def set_x_velocity(self, new_x_velocity):
         self.x_velocity = new_x_velocity
 
@@ -93,6 +97,7 @@ class CellManager(object):
         self.blurSize = 5
         self.h = 5
         self.image = []
+        self.numCells = 0
 
     def dataset(self, dataset):
         if dataset == "PhC":
@@ -145,19 +150,23 @@ class CellManager(object):
         # show_image(overlay, "local")
         if self.demo:
             show_image(overlay_h, "regional")
+            imsave("./report/Fluo/hMaxima.png", overlay_h)
+            # print(f"hMaxima: {overlay_h.dtype}")
 
         return h_maxima
 
     def processImage(self, gray, mask, show=False):
         mask = clear_border(mask)
         if self.demo:
-            show_image(mask, "Remove contours on edge")
+            # show_image(mask, "Remove contours on edge")
+            cv.imwrite("./report/Fluo/remove-edges.png", mask)
 
         nuclei = self.hMaxima(gray, mask)
         self.image = gray
 
-        if self.demo:
-            plot_two("Original vs nuclei", gray, "Original", nuclei, "Nuclei segmented")
+        # if self.demo:
+        #     plot_two("Original vs nuclei", gray, "Original", nuclei, "Nuclei segmented")
+
 
         #counts labelled cells, measures bounding boxes and stores in list
 
@@ -170,14 +179,16 @@ class CellManager(object):
         
         if show:
             self.show(drawn)
+        #     cv.imwrite("./report/Fluo/bounding_boxes.png", drawn)
 
-        print(f"Processed image: {self.currImage}")
+        print(f"Processed image: {self.currImage} with {pred_count} cells")
         self.currImage = self.currImage + 1
+
+        return pred_count
 
     def show(self, drawn):
         cv.imshow("Bounding Box", drawn)
         cv.waitKey(0)
-        cv.destroyAllWindows()
 
     def in_image(self, image_no, cell_id):
         if (image_no < 0 or image_no >= len(self.sequence)):
@@ -201,7 +212,7 @@ class CellManager(object):
     def calculate_total_distance(self, cell_id):
         total = 0
         for i in range(self.currImage - 1):
-            if (in_image(i, cell_id)):
+            if (self.in_image(i, cell_id)):
                 total = total + distance.euclidean(self.get_cell(i, cell_id).get_centre(), self.get_cell(i + 1, cell_id).get_centre())
         return total
 
@@ -212,6 +223,22 @@ class CellManager(object):
                 cell2 = self.get_cell(self.currImage, cell_id)
                 return distance.euclidean(cell1.get_centre(), cell2.get_centre())
         return 0
+
+    def draw_cell_track(self, image, cell):
+        colour = (0, 255, 0)
+        thickness = 1
+        for i in range(self.currImage):
+            if (self.in_image(i, cell.get_id())):
+                prev_cell = self.get_cell(i, cell.get_id())
+                next_cell = self.get_cell(i+1, cell.get_id())
+                if (next_cell != None and prev_cell != None):
+                    image = cv.line(image, prev_cell.get_centre(), next_cell.get_centre(), colour, thickness)
+        return image
+
+    def draw_tracks(self, image):
+        for cell in self.sequence[self.currImage]:
+            image = self.draw_cell_track(image, cell)
+        return image
 
     def show_cell_details(self, x, y):
         for cell in self.sequence[self.currImage]:
@@ -228,6 +255,10 @@ class CellManager(object):
                     confinement = (total_distance / net_distance)
                 print("Confinement Ratio: " + str(confinement))
 
+    def add_cell(self, cnt):
+        self.numCells += 1
+        return Cell(self.numCells, cnt)
+
     def count_cells(self, mask, nuclei):
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
@@ -243,30 +274,32 @@ class CellManager(object):
             # cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
             # plot_two("zoom", drawn, "contour", drawn[y:y+h, x:x+w], "zoom")
 
-            # if self.count_peaks(nuclei[y:y+h, x:x+w]) > 1:
-            #     drawn = self.image.copy()
-            #     colour = (255, 0, 0)
-            #     cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
-            #     # show_image(drawn, "cluster")
+            if self.count_peaks(nuclei[y:y+h, x:x+w]) > 1:
+                drawn = self.image.copy()
+                colour = (255, 0, 0)
+                cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
+                # show_image(drawn, "cluster")
 
-            #     rect = [[x, y], [x+w, y], [x+w, y+h], [x, y+h]]
-            #     poly = np.array([rect], dtype=np.int32)
-            #     clusterMask = np.zeros(mask.shape, dtype=np.uint8)
-            #     cv.fillPoly(clusterMask, poly, 255)
-            #     # plot_two("Drawn", self.image, "Image", clusterMask, "Cluster")
-            #     drawn = cv.bitwise_and(nuclei, clusterMask)
+                rect = [[x, y], [x+w, y], [x+w, y+h], [x, y+h]]
+                poly = np.array([rect], dtype=np.int32)
+                clusterMask = np.zeros(mask.shape, dtype=np.uint8)
+                cv.fillPoly(clusterMask, poly, 255)
+                # plot_two("Drawn", self.image, "Image", clusterMask, "Cluster")
+                drawn = cv.bitwise_and(nuclei, clusterMask)
+                # show_image(drawn, "drawn")
+                # print(f"drawn: {drawn.dtype}")
+                # cv.imwrite(f"./report/Fluo/cluster{self.numCells}.png", drawn)
 
-            #     _, nContours, _ = cv.findContours(nuclei, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-            #     for cnt in nContours:
-            #         cell = Cell(i, cnt)
-            #         sequence.append(cell)
+                _, nContours, _ = cv.findContours(drawn, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+                for cnt in nContours:
+                    cell = self.add_cell(cnt)
+                    sequence.append(cell)
 
-            #     # expanded = expand_labels(nuclei, distance=self.average_radius())
-            #     # plot_two("Drawn", nuclei, "Image", expanded, "Cluster")
-
-            # else:
-            cell = Cell(i, c)
-            sequence.append(cell)
+                # expanded = expand_labels(nuclei, distance=self.average_radius())
+                # plot_two("Drawn", nuclei, "Image", expanded, "Cluster")
+            else:
+                cell = self.add_cell(c)
+                sequence.append(cell)
 
         colour = (0, 255, 0)
 
@@ -296,6 +329,9 @@ class CellManager(object):
             x, y, w, h = cell.get_rect()
             cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
             cv.circle(drawn, cell.get_centre(), 1, colour, 2)
+            cv.putText(drawn, f"ID: {cell.get_id()}", cell.get_centre(), cv.FONT_HERSHEY_DUPLEX, 0.5, colour, 1, cv.LINE_AA)
+
+        drawn = self.draw_tracks(drawn)
 
         return drawn
 
@@ -315,11 +351,12 @@ class CellManager(object):
         for i in range(numCurr):
             for j in range(numPrev):
                 displace = displacement(h,w,currCells[i].centre, prevCells[j].centre)
-                diffArea = abs(currCells[i].area - prevCells[j].area)
-                matchingMatrix[i][j][0] = displace+diffArea
+                # diffArea = abs(currCells[i].area - prevCells[j].area)
+                matchingMatrix[i][j][0] = displace
                 matchingMatrix[i][j][1] = j
 
         sortedMatrix = np.zeros((numCurr,numPrev,2))
+
         for i in range(numCurr):
             sortedMatrix[i] = quicksortMatrix(matchingMatrix[i])
 
@@ -329,10 +366,10 @@ class CellManager(object):
         # print(sortedMatrix)
 
         matches = np.zeros(numCurr)
-        print(sortedMatrix[0][0])
-        print(len(sortedMatrix[0][0]))
+        # print(sortedMatrix[0][0])
+        # print(len(sortedMatrix[0][0]))
         for i in range(numCurr):
-            matches[i] = sortedMatrix[i][0]
+            matches[i] = sortedMatrix[i][0][1]
 
         # print("matches:")
         # print(matches)
@@ -341,6 +378,14 @@ class CellManager(object):
             matches, success = checkMatches(matches, sortedMatrix)
 
         for i in range(numCurr):
+            prev = self.sequence[self.currImage-1][int(matches[i])]
+            cell = self.sequence[self.currImage][i]
+
+            if matchingMatrix[i][int(matches[i])][0] > 0.2:
+                print("rejected")
+                matches[i] = -1
+
             if (matches[i] != -1):
-                cell = self.sequence[self.currImage][i]
-                cell.set_id(self.sequence[self.currImage][int(matches[i])].get_id())
+                if prev.get_area() * 1.3 >= cell.get_area():
+                    cell.set_dividing()
+                cell.set_id(prev.get_id())
