@@ -232,7 +232,7 @@ def stretch(image):
 
     return draw, minVal, maxVal
 
-def show_image(image, title):
+def show_image(img, title):
     plt.imshow(img)
     plt.axis('off')
     plt.title(title)
@@ -380,3 +380,10 @@ def quicksortMatrix(matchArray):
     return quicksortMatrix(low) + same + quicksortMatrix(high)
 
 
+def printMatchMatrix(matchMatrix, Rows, Cols):
+    printMatrix = np.zeros((Rows,Cols))
+    for i in range(Rows):
+        for j in range(Cols):
+            printMatrix[i][j] = matchMatrix[i][j][0]
+    for i in range(Rows):
+        print(printMatrix[i])
