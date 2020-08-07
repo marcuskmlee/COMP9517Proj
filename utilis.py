@@ -233,7 +233,7 @@ def stretch(image):
     return draw, minVal, maxVal
 
 def show_image(image, title):
-    plt.imshow(image)
+    plt.imshow(img)
     plt.axis('off')
     plt.title(title)
     plt.show()

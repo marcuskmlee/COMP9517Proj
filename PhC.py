@@ -39,7 +39,7 @@ def preprocess(image):
 
     # mask = cv.cvtColor(mask, cv.COLOR_BGR2GRAY)
 
-    return mask
+    return mask, src
 
 # img = backgroundSubtraction(filename)
 # toHMax = img.copy()
