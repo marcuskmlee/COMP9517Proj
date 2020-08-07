@@ -17,6 +17,7 @@ import Fluo
 
 from cell import Cell, CellManager
 import argparse
+import csv
 
 parser = argparse.ArgumentParser(description='Comp9517 Project')
 parser.add_argument('--DIC', nargs='?', default=False, const=True,
@@ -30,8 +31,11 @@ parser.add_argument('--demo', nargs='?', default=False, const=True,
 
 args = parser.parse_args()
 
+row_list = [["Filename", "# Cells"]]
+
 def run_PhC():
-    sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
+    sequences = ["Sequence_2"]
+    # , "Sequence_2", "Sequence_3", "Sequence_4"]
     manager.dataset(dataset="PhC")
     for folder in sequences:    
         images = [f for f in glob.glob(f"./Data/{datasets[2]}/{folder}/*")]
@@ -43,12 +47,17 @@ def run_PhC():
 
             #processes images to segmented and thresholded cells
             #replace with better segmentation algorithm
-            mask = PhC.preprocess(img)
+            mask, interim = PhC.preprocess(img)
             if args.demo:
-                plot_two("Mask", img, "Original", mask, "Mask")
+                # plot_two("Mask", img, "Original", mask, "Mask")
+                cv.imwrite("./report/Background_subtracted.png", interim)
+                cv.imwrite("./report/report/Mask-otsu.png", mask)
 
             show = images.index(image_path) == len(images)-1
-            manager.processImage(img, mask, show=show)
+            count = manager.processImage(img, mask, show=show)
+
+            _, name = pathname(image_path)
+            row_list.append([name, count])
 
 def run_DIC():
     sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
@@ -73,30 +82,40 @@ def run_DIC():
             manager.processImage(img, mask, show=show)
 
 def run_Fluo():
-    sequences = ["Sequence_1", "Sequence_2", "Sequence_3", "Sequence_4"]
+    sequences = ["Sequence_2"]
+    # , "Sequence_2", "Sequence_3", "Sequence_4"]
     manager.dataset(dataset="Fluo")
     for folder in sequences:
         images = [f for f in glob.glob(f"./Data/{datasets[1]}/{folder}/*")]
         images.sort()
 
         for image_path in images:
+            image_path = "./Data/Fluo-N2DL-HeLa/Sequence_2/t078.tif"
             img = cv.imread(image_path, cv.IMREAD_GRAYSCALE)
 
             if args.demo:
                 show_image(img, "Original")
+                cv.imwrite("./report/Fluo/original.png", img)
 
             mask, img = Fluo.preprocess_image(img)
 
             if args.demo:
                 plot_two("Mask", img, "Original", mask, "Mask")
+                cv.imwrite("./report/Fluo/mask.png", mask)
+                cv.imwrite("./report/Fluo/stretched.png", img)
 
-            show = images.index(image_path) == len(images)-1
-            manager.processImage(img, mask, show=show)
+            # show = images.index(image_path) == len(images)-1
+            show = "./Data/Fluo-N2DL-HeLa/Sequence_2/t078.tif" == image_path
+            count = manager.processImage(img, mask, show=show)
+
+            _, name = pathname(image_path)
+            row_list.append([name, count])
 
 manager = CellManager(demo=args.demo)
 
 def on_click(event, x, y, p1, p2):
     if event == cv.EVENT_LBUTTONDOWN:
+        print("onClick")
         manager.show_cell_details(x, y)
 
 datasets = ["DIC-C2DH-HeLa", "Fluo-N2DL-HeLa", "PhC-C2DL-PSC"]
@@ -116,3 +135,7 @@ else:
     run_DIC()
     run_Fluo()
     run_PhC()
+
+with open('PhC_preds2.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerows(row_list)
