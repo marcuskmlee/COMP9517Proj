@@ -232,7 +232,7 @@ def stretch(image):
 
     return draw, minVal, maxVal
 
-def show_image(image, title):
+def show_image(img, title):
     plt.imshow(img)
     plt.axis('off')
     plt.title(title)
@@ -392,10 +392,5 @@ def printMatchMatrix(matchMatrix, Rows, Cols):
 
     for i in range(10):
         print(printMatrix[i])
-
-
-
-
-
 
 

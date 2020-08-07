@@ -106,6 +106,10 @@ class CellManager(object):
         elif dataset == "Fluo":
             self.h = 10
             self.blurSize = 25
+        elif dataset == "DIC":
+            self.dataset = dataset
+            self.h = 10
+            self.blurSize = 99
 
     def count_cell_divisions(self, cells):
         count = 0
@@ -133,41 +137,50 @@ class CellManager(object):
         # maxima = cv.bitwise_and(maxima, minima)
         # maxima = cv.GaussianBlur(maxima, (5,5), 0)
 
-        size = (self.blurSize, self.blurSize)
-        img = cv.GaussianBlur(img, size, 0)
-        img = cv.bitwise_and(img, mask)
+        temp = cv.bitwise_and(img, mask)
 
-        local_maxima = extrema.local_maxima(img, connectivity=5)
+        size = (self.blurSize, self.blurSize)
+        temp = cv.GaussianBlur(temp, size, 0)
+        # show_image(img, "blurred")
+
+        local_maxima = extrema.local_maxima(temp, connectivity=0)
         label_maxima = label(local_maxima)
 
         overlay = color.label2rgb(label_maxima, img, alpha=0.7, bg_label=0,
                                 bg_color=None, colors=[(1, 0, 0)])
 
-        h_maxima = extrema.h_maxima(img, self.h)
+        h_maxima = extrema.h_maxima(temp, self.h)
         label_h_maxima = label(h_maxima)
         overlay_h = color.label2rgb(label_h_maxima, img, alpha=0.7, bg_label=0,
                                     bg_color=None, colors=[(1, 0, 0)])
 
         # show_image(overlay, "local")
-        if self.demo:
-            show_image(overlay_h, "regional")
-            imsave("./report/Fluo/hMaxima.png", overlay_h)
+        # if self.demo:
+        #     # show_image(overlay, "regional")
+        #     cv.imshow("overlay", overlay)
+            # imsave("./report/Fluo/hMaxima.png", overlay_h)
             # print(f"hMaxima: {overlay_h.dtype}")
+
+        if self.dataset == "DIC":
+            show_image(overlay, "regional")
+            cv.imwrite("./report/DIC/hmaxima.png", overlay.astype(np.uint8))
+            exit(1)
+            return local_maxima
 
         return h_maxima
 
     def processImage(self, gray, mask, show=False):
-        # nuclei = self.hMaxima(gray, mask)
+        nuclei = self.hMaxima(gray, mask)
         mask = clear_border(mask)
+        # mask = clear_border(mask)
         if self.demo:
             # show_image(mask, "Remove contours on edge")
             cv.imwrite("./report/Fluo/remove-edges.png", mask)
 
         # nuclei = self.hMaxima(gray, mask)
-        nuclei = mask.copy()
         self.image = gray
 
-        # if self.demo:
+        # if True:
         #     plot_two("Original vs nuclei", gray, "Original", nuclei, "Nuclei segmented")
 
 
@@ -180,8 +193,8 @@ class CellManager(object):
         color = cv.cvtColor(gray, cv.COLOR_GRAY2BGR)
         drawn = self.draw_bounding_box(color)
         
-        if show:
-            self.show(drawn)
+        # if True:
+        #     self.show(drawn)
         #     cv.imwrite("./report/Fluo/bounding_boxes.png", drawn)
 
         print(f"Processed image: {self.currImage} with {pred_count} cells")
@@ -264,8 +277,20 @@ class CellManager(object):
 
     def count_cells(self, mask, nuclei):
         _, contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-
         sequence = []
+
+        if self.dataset == "DIC":
+            _, cnts, _ = cv.findContours(nuclei, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+            
+            for i, c in enumerate(cnts):
+                rect = cv.boundingRect(c)
+                x, y, w, h = rect
+
+                cell = self.add_cell(c)
+                sequence.append(cell)
+
+            return len(cnts), sequence
+
         for i, c in enumerate(contours):
             rect = cv.boundingRect(c)
             x, y, w, h = rect
@@ -364,6 +389,9 @@ class CellManager(object):
         # printMatchMatrix(matchingMatrix, numCurr, numPrev)
 
         sortedMatrix = np.zeros((numCurr,numPrev,2))
+
+        # print("Matching Matrix:")
+        # printMatchMatrix(matchingMatrix, numCurr, numPrev)
 
         for i in range(numCurr):
             sortedMatrix[i] = quicksortMatrix(matchingMatrix[i])
