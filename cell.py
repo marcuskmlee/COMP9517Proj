@@ -145,6 +145,7 @@ class CellManager(object):
 
         local_maxima = extrema.local_maxima(temp, connectivity=0)
         label_maxima = label(local_maxima)
+
         overlay = color.label2rgb(label_maxima, img, alpha=0.7, bg_label=0,
                                 bg_color=None, colors=[(1, 0, 0)])
 
@@ -169,12 +170,14 @@ class CellManager(object):
         return h_maxima
 
     def processImage(self, gray, mask, show=False):
+        nuclei = self.hMaxima(gray, mask)
+        mask = clear_border(mask)
         # mask = clear_border(mask)
         if self.demo:
             # show_image(mask, "Remove contours on edge")
             cv.imwrite("./report/Fluo/remove-edges.png", mask)
 
-        nuclei = self.hMaxima(gray, mask)
+        # nuclei = self.hMaxima(gray, mask)
         self.image = gray
 
         # if True:
@@ -189,7 +192,7 @@ class CellManager(object):
         self.matchCells(gray)
         color = cv.cvtColor(gray, cv.COLOR_GRAY2BGR)
         drawn = self.draw_bounding_box(color)
-        
+
         if True:
             cv.imwrite("./report/DIC/bounding_boxes.png", drawn)
             self.show(drawn)
@@ -278,7 +281,7 @@ class CellManager(object):
 
         if self.dataset == "DIC":
             _, cnts, _ = cv.findContours(nuclei, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-            
+
             for i, c in enumerate(cnts):
                 rect = cv.boundingRect(c)
                 x, y, w, h = rect
@@ -361,30 +364,35 @@ class CellManager(object):
         return drawn
 
     def matchCells(self,image):
-        # print(self.currImage)
-        # print (self.sequence)
         if self.currImage == 0:
             return
-        
+
         h,w = image.shape
         prevCells = self.sequence[self.currImage-1]
         currCells = self.sequence[self.currImage]
         numPrev = len(prevCells)
         numCurr = len(currCells)
-        matchingMatrix = np.full((numCurr,numPrev,2),100)
+        matchingMatrix = np.full((numCurr,numPrev,2),100, dtype=float)
         # minMatch = np.full((numCurr,2),100)
         for i in range(numCurr):
             for j in range(numPrev):
                 displace = displacement(h,w,currCells[i].centre, prevCells[j].centre)
                 print(100*displace)
                 # diffArea = abs(currCells[i].area - prevCells[j].area)
-                matchingMatrix[i][j][0] = 100* displace
+                matchingMatrix[i][j][0] = displace
+                # print(displace)
+                # print("matchingmatrix["+str(i)+"]["+str(j)+"]="+str(matchingMatrix[i][j][0]))
                 matchingMatrix[i][j][1] = j
 
-        print(f"numCurr: {numCurr}, numPrev: {numPrev}")
-        print("Matching Matrix:")
+
+        # print("Matching Matrix:")
         # print(matchingMatrix)
-        printMatchMatrix(matchingMatrix, numCurr, numPrev)
+        # printMatchMatrix(matchingMatrix, numCurr, numPrev)
+
+        sortedMatrix = np.zeros((numCurr,numPrev,2))
+
+        # print("Matching Matrix:")
+        # printMatchMatrix(matchingMatrix, numCurr, numPrev)
 
         sortedMatrix = np.zeros((numCurr,numPrev,2))
 
@@ -417,6 +425,8 @@ class CellManager(object):
                 matches[i] = -1
 
             if (matches[i] != -1):
+                cell = self.sequence[self.currImage][i]
+                cell.set_id(self.sequence[self.currImage-1][int(matches[i])].get_id())
                 if prev.get_area() * 1.3 >= cell.get_area():
                     cell.set_dividing()
                 cell.set_id(prev.get_id())
