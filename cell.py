@@ -100,6 +100,7 @@ class CellManager(object):
         self.numCells = 0
 
     def dataset(self, dataset):
+        self.dataset = dataset
         if dataset == "PhC":
             self.h = 16
             self.blurSize = 7
@@ -107,7 +108,6 @@ class CellManager(object):
             self.h = 10
             self.blurSize = 25
         elif dataset == "DIC":
-            self.dataset = dataset
             self.h = 10
             self.blurSize = 99
 
@@ -143,7 +143,7 @@ class CellManager(object):
         temp = cv.GaussianBlur(temp, size, 0)
         # show_image(img, "blurred")
 
-        local_maxima = extrema.local_maxima(temp, connectivity=0)
+        local_maxima = extrema.local_maxima(temp, connectivity=5)
         label_maxima = label(local_maxima)
 
         overlay = color.label2rgb(label_maxima, img, alpha=0.7, bg_label=0,
@@ -166,6 +166,13 @@ class CellManager(object):
             # cv.imwrite("./report/DIC/hmaxima.png", overlay.astype(np.uint8))
             # exit(1)
             return local_maxima.astype(np.uint8)
+        
+        # print(h_maxima)
+        # print(np.amax(h_maxima*255))
+
+        show_image(overlay_h, "")
+        imsave(f"./report/{self.dataset}/hMaxima.png", overlay_h)
+        # cv.imwrite(f"./report/{self.dataset}/hMaxima.png", h_maxima)
 
         return h_maxima
 
@@ -175,7 +182,7 @@ class CellManager(object):
         # mask = clear_border(mask)
         if self.demo:
             # show_image(mask, "Remove contours on edge")
-            cv.imwrite("./report/Fluo/remove-edges.png", mask)
+            cv.imwrite(f"./report/{self.dataset}/remove-edges.png", mask)
 
         # nuclei = self.hMaxima(gray, mask)
         self.image = gray
@@ -194,7 +201,7 @@ class CellManager(object):
         drawn = self.draw_bounding_box(color)
 
         if True:
-            cv.imwrite("./report/DIC/bounding_boxes.png", drawn)
+            cv.imwrite(f"./report/{self.dataset}/bounding_boxes.png", drawn)
             self.show(drawn)
 
         print(f"Processed image: {self.currImage} with {pred_count} cells")
@@ -303,6 +310,8 @@ class CellManager(object):
             # plot_two("zoom", drawn, "contour", drawn[y:y+h, x:x+w], "zoom")
 
             if self.count_peaks(nuclei[y:y+h, x:x+w]) > 1:
+                show_image(self.image[y:y+h, x:x+w], "Cluster")
+
                 drawn = self.image.copy()
                 colour = (255, 0, 0)
                 cv.rectangle(drawn, (int(x), int(y)), (int(w+x), int(y+h)), colour, 1)
@@ -377,7 +386,7 @@ class CellManager(object):
         for i in range(numCurr):
             for j in range(numPrev):
                 displace = displacement(h,w,currCells[i].centre, prevCells[j].centre)
-                print(100*displace)
+                # print(100*displace)
                 # diffArea = abs(currCells[i].area - prevCells[j].area)
                 matchingMatrix[i][j][0] = displace
                 # print(displace)
